@@ -1,0 +1,10 @@
+[package]
+name = "fullmoon"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+futures = "0.3.31"
+iced = { version = "0.13.1", features = ["tokio"] }
+llm = "1.3.4"
+tokio = { version = "1.45.1", features = ["full"] }
