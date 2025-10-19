@@ -1,5 +1,8 @@
-use iced::widget::{Column, Text, column, keyed_column, scrollable, text_input};
-use iced::{Center, Length, Task};
+mod chat;
+
+use chat::{Chat, Message, MessageOwner};
+use iced::widget::{Column, column, text_input};
+use iced::{Center, Task, Theme};
 use llm::chat::ChatResponse;
 use llm::{
     builder::{LLMBackend, LLMBuilder},
@@ -7,13 +10,15 @@ use llm::{
 };
 
 pub fn main() -> iced::Result {
-    iced::run("FullMoon", App::update, App::view)
+    iced::application("FullMoon", App::update, App::view)
+        .theme(App::theme)
+        .run()
 }
 
 #[derive(Default)]
 struct App {
     input_message: String,
-    messages: Vec<String>,
+    chat: Chat,
 }
 
 #[derive(Debug, Clone)]
@@ -40,10 +45,14 @@ impl App {
             IcedMessage::InputChange(input) => self.input_message = input,
             IcedMessage::CreateMessage => {
                 self.create_message();
-                let messages = self.messages.clone();
-                return Task::perform(get_response(messages), IcedMessage::from_result);
+                return Task::perform(
+                    get_response(self.chat.get_messages()),
+                    IcedMessage::from_result,
+                );
             }
-            IcedMessage::ResponseSucces(response) => self.messages.push(response),
+            IcedMessage::ResponseSucces(response) => {
+                self.chat.push(Message::new(MessageOwner::Char, response))
+            }
             IcedMessage::ResponseError(error) => println!("{}", error),
         }
         Task::none()
@@ -51,14 +60,7 @@ impl App {
 
     fn view(&self) -> Column<'_, IcedMessage> {
         column![
-            scrollable(keyed_column(
-                self.messages
-                    .iter()
-                    .enumerate()
-                    .map(|(idx, message)| { (idx, Text::new(message).into()) })
-            ))
-            .height(Length::Fill)
-            .width(Length::Fill),
+            self.chat.view(),
             text_input("What needs to be done?", &self.input_message)
                 .id("user-input")
                 .on_input(IcedMessage::InputChange)
@@ -68,14 +70,19 @@ impl App {
         .align_x(Center)
     }
 
+    fn theme(&self) -> Theme {
+        Theme::TokyoNight
+    }
+
     fn create_message(&mut self) {
-        self.messages.push(self.input_message.clone());
+        let text = self.input_message.clone();
+        self.chat.push(Message::new(MessageOwner::User, text));
         self.input_message.clear();
     }
 }
 
 async fn get_response(
-    messages: Vec<String>,
+    messages: Vec<Message>,
 ) -> Result<Box<dyn ChatResponse>, llm::error::LLMError> {
     let api_key = std::env::var("OPENROUTER_API_KEY").unwrap_or("sk-TESTKEY".into());
     println!("Api key: {}", api_key);
@@ -90,8 +97,12 @@ async fn get_response(
 
     let mut chat_messages = vec![];
     for msg in &messages {
-        chat_messages.push(ChatMessage::user().content(msg.clone()).build());
+        chat_messages.push(match msg.owner {
+            MessageOwner::User => ChatMessage::user().content(msg.text.clone()).build(),
+            MessageOwner::Char => ChatMessage::assistant().content(msg.text.clone()).build(),
+        })
     }
+
     println!("Starting chat with Openrouter...\n");
     for mes in &chat_messages {
         println!("{:?}", mes);
