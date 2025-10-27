@@ -1,11 +1,8 @@
-use iced::{
-    Border,
-    Length::Fill,
-    Theme,
-    widget::{Scrollable, Text, container, image, keyed_column, row, scrollable},
-};
+use iced::widget::{Scrollable, Text, container, image, keyed_column, row, scrollable};
+use iced::{Border, Length::Fill, Theme};
 
 use crate::IcedMessage;
+use crate::message::{Message, MessageOwner};
 
 #[derive(Default)]
 pub struct Chat {
@@ -62,25 +59,5 @@ impl Chat {
         container::rounded_box(theme)
             .background(palette.background.weak.color)
             .border(Border::default().rounded(12))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum MessageOwner {
-    User,
-    Char,
-}
-
-#[derive(Clone)]
-pub struct Message {
-    pub owner: MessageOwner,
-    pub text: String,
-}
-
-impl Message {
-    pub fn new(owner: MessageOwner, text: String) -> Self {
-        let text = text.trim().to_string();
-        println!("{:?}: {:?}", owner, text);
-        Message { owner, text }
     }
 }
