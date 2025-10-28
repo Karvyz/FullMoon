@@ -8,6 +8,7 @@ use iced::widget::{Column, column, text_input};
 use iced::{Center, Task, Theme};
 use llm::LLMProvider;
 use llm::builder::{LLMBackend, LLMBuilder};
+use llm::chat::ChatMessage;
 
 use crate::message::{Message, MessageOwner};
 
@@ -27,8 +28,8 @@ struct App {
 enum IcedMessage {
     InputChange(String),
     CreateMessage,
-    AddMessage(Message),
-    ErrorMessage(String),
+    StreamOk(String),
+    StreamError,
 }
 
 impl App {
@@ -54,16 +55,12 @@ impl App {
             IcedMessage::InputChange(input) => self.input_message = input,
             IcedMessage::CreateMessage => {
                 self.create_message();
-                return Task::perform(
-                    Message::get_response(self.llm.clone(), self.chat.get_messages()),
-                    |resp| match resp {
-                        Ok(msg) => IcedMessage::AddMessage(msg),
-                        Err(e) => IcedMessage::ErrorMessage(e),
-                    },
-                );
+                let chat_history = self.chat.get_chat_messages();
+                self.chat.push(Message::empty(MessageOwner::Char));
+                return self.get_response(&self.llm, chat_history);
             }
-            IcedMessage::AddMessage(message) => self.chat.push(message),
-            IcedMessage::ErrorMessage(e) => println!("{}", e),
+            IcedMessage::StreamOk(text) => self.chat.append_last_message(text),
+            IcedMessage::StreamError => todo!(),
         }
         Task::none()
     }
@@ -88,5 +85,23 @@ impl App {
         let text = self.input_message.clone();
         self.chat.push(Message::new(MessageOwner::User, text));
         self.input_message.clear();
+    }
+
+    fn get_response(
+        &self,
+        llm: &Arc<Box<dyn LLMProvider>>,
+        messages: Vec<ChatMessage>,
+    ) -> Task<IcedMessage> {
+        println!("Starting chat with Openrouter...\n");
+        for mes in &messages {
+            println!("{:?}", mes);
+        }
+        let llm = llm.clone();
+        Task::perform(async move { llm.chat_stream(&messages).await }, |res| res).and_then(|res| {
+            Task::run(res, |chunk| match chunk {
+                Ok(text) => IcedMessage::StreamOk(text),
+                Err(_) => IcedMessage::StreamError,
+            })
+        })
     }
 }
