@@ -1,5 +1,6 @@
 mod chat;
 mod message;
+mod settings;
 
 use std::sync::Arc;
 
@@ -7,10 +8,10 @@ use chat::Chat;
 use iced::widget::{Column, column, text_input};
 use iced::{Center, Task, Theme};
 use llm::LLMProvider;
-use llm::builder::{LLMBackend, LLMBuilder};
 use llm::chat::ChatMessage;
 
 use crate::message::{Message, MessageOwner};
+use crate::settings::Settings;
 
 pub fn main() -> iced::Result {
     iced::application("FullMoon", App::update, App::view)
@@ -21,6 +22,7 @@ pub fn main() -> iced::Result {
 struct App {
     input_message: String,
     chat: Chat,
+    settings: Settings,
     llm: Arc<Box<dyn LLMProvider>>,
 }
 
@@ -34,19 +36,13 @@ enum IcedMessage {
 
 impl App {
     fn new() -> Self {
-        let api_key = std::env::var("OPENROUTER_API_KEY").unwrap_or("sk-TESTKEY".into());
-        println!("Api key: {}", api_key);
+        let settings = Settings::load();
+        let llm = settings.llm();
         App {
             input_message: String::new(),
             chat: Chat::default(),
-            llm: Arc::new(
-                LLMBuilder::new()
-                    .backend(LLMBackend::OpenRouter)
-                    .api_key(api_key)
-                    .model("google/gemma-3-27b-it")
-                    .build()
-                    .expect("Failed to build LLM (Openrouter)"),
-            ),
+            settings,
+            llm: Arc::new(llm),
         }
     }
 

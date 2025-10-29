@@ -1,9 +1,4 @@
-use std::sync::Arc;
-
-use iced::Task;
-use llm::{LLMProvider, chat::ChatMessage};
-
-use crate::IcedMessage;
+use llm::chat::ChatMessage;
 
 #[derive(Debug, Clone)]
 pub enum MessageOwner {
