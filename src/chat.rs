@@ -1,5 +1,13 @@
-use iced::widget::{Scrollable, Text, container, image, keyed_column, row, scrollable};
+use chrono::Local;
+use iced::alignment::Horizontal;
+use iced::font::Weight;
+use iced::widget::text::Shaping;
+use iced::widget::{
+    Scrollable, button, column, container, image, keyed_column, rich_text, row, scrollable, span,
+    text,
+};
 use iced::{Border, Length::Fill, Theme};
+use iced::{Font, Length};
 use llm::chat::ChatMessage;
 
 use crate::IcedMessage;
@@ -50,7 +58,35 @@ impl Chat {
                                         .width(100)
                                         .height(100)
                                     ),
-                                    Text::new(message.text.clone()).width(Fill)
+                                    column![
+                                        rich_text![
+                                            span(match message.owner {
+                                                MessageOwner::User => "User",
+                                                MessageOwner::Char => "Char",
+                                            })
+                                            .font(
+                                                Font {
+                                                    weight: Weight::Bold,
+                                                    ..Font::default()
+                                                }
+                                            ),
+                                            "  ",
+                                            span(
+                                                Local::now().format("%B %d, %Y %H:%M").to_string()
+                                            )
+                                        ],
+                                        text(message.text.clone())
+                                            .width(Fill)
+                                            .shaping(Shaping::Advanced)
+                                    ]
+                                    .spacing(4),
+                                    column![
+                                        text("1/1").align_x(Horizontal::Center),
+                                        button(">"),
+                                        button("<")
+                                    ]
+                                    .spacing(2)
+                                    .width(Length::Shrink)
                                 ]
                                 .padding(10)
                                 .spacing(10),
@@ -65,6 +101,7 @@ impl Chat {
         .anchor_bottom()
         .height(Fill)
         .width(Fill)
+        .spacing(10)
     }
 
     fn message_style(theme: &Theme) -> iced::widget::container::Style {

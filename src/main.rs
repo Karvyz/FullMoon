@@ -75,6 +75,7 @@ impl App {
         ]
         .padding(20)
         .align_x(Center)
+        .spacing(10)
     }
 
     fn theme(&self) -> Theme {
