@@ -10,6 +10,7 @@ use iced::{Center, Task, Theme};
 use llm::LLMProvider;
 use llm::chat::ChatMessage;
 
+use crate::chat::MessageCommand;
 use crate::message::{Message, MessageOwner};
 use crate::settings::Settings;
 
@@ -27,11 +28,12 @@ struct App {
 }
 
 #[derive(Debug, Clone)]
-enum IcedMessage {
+enum AppCommand {
     InputChange(String),
     CreateMessage,
     StreamOk(String),
     StreamError,
+    MessageCommand(usize, MessageCommand),
 }
 
 impl App {
@@ -46,28 +48,40 @@ impl App {
         }
     }
 
-    fn update(&mut self, message: IcedMessage) -> Task<IcedMessage> {
+    fn update(&mut self, message: AppCommand) -> Task<AppCommand> {
         match message {
-            IcedMessage::InputChange(input) => self.input_message = input,
-            IcedMessage::CreateMessage => {
+            AppCommand::InputChange(input) => self.input_message = input,
+            AppCommand::CreateMessage => {
                 self.create_message();
                 let chat_history = self.chat.get_chat_messages();
                 self.chat.push(Message::empty(MessageOwner::Char));
                 return self.get_response(&self.llm, chat_history);
             }
-            IcedMessage::StreamOk(text) => self.chat.append_last_message(text),
-            IcedMessage::StreamError => todo!(),
+            AppCommand::StreamOk(text) => self.chat.append_last_message(text.as_str()),
+            AppCommand::StreamError => todo!(),
+            AppCommand::MessageCommand(idx, message_command) => {
+                println!("Command {:?} from {idx}", message_command);
+                match message_command {
+                    MessageCommand::Next => {
+                        if self.chat.next(idx) {
+                            return self
+                                .get_response(&self.llm, self.chat.get_chat_messages_until(idx));
+                        }
+                    }
+                    MessageCommand::Previous => self.chat.previous(idx),
+                }
+            }
         }
         Task::none()
     }
 
-    fn view(&self) -> Column<'_, IcedMessage> {
+    fn view(&self) -> Column<'_, AppCommand> {
         column![
             self.chat.view(),
             text_input("What needs to be done?", &self.input_message)
                 .id("user-input")
-                .on_input(IcedMessage::InputChange)
-                .on_submit(IcedMessage::CreateMessage),
+                .on_input(AppCommand::InputChange)
+                .on_submit(AppCommand::CreateMessage),
         ]
         .padding(20)
         .align_x(Center)
@@ -88,16 +102,17 @@ impl App {
         &self,
         llm: &Arc<Box<dyn LLMProvider>>,
         messages: Vec<ChatMessage>,
-    ) -> Task<IcedMessage> {
-        println!("Starting chat with Openrouter...\n");
+    ) -> Task<AppCommand> {
+        println!("Getting response with chat history:");
         for mes in &messages {
             println!("{:?}", mes);
         }
+        println!();
         let llm = llm.clone();
         Task::perform(async move { llm.chat_stream(&messages).await }, |res| res).and_then(|res| {
             Task::run(res, |chunk| match chunk {
-                Ok(text) => IcedMessage::StreamOk(text),
-                Err(_) => IcedMessage::StreamError,
+                Ok(text) => AppCommand::StreamOk(text),
+                Err(_) => AppCommand::StreamError,
             })
         })
     }

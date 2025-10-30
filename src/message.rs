@@ -15,7 +15,6 @@ pub struct Message {
 impl Message {
     pub fn new(owner: MessageOwner, text: String) -> Self {
         let text = text.trim().to_string();
-        println!("{:?}: {:?}", owner, text);
         Message { owner, text }
     }
 
