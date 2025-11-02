@@ -4,7 +4,9 @@ use llm::{
     builder::{LLMBackend, LLMBuilder},
 };
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::{fs, sync::Arc};
+
+use crate::persona::Persona;
 
 #[derive(Deserialize, Serialize)]
 pub struct Settings {
@@ -22,11 +24,12 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn llm(&self) -> Box<dyn LLMProvider> {
+    pub fn llm(&self, char: Arc<dyn Persona>) -> Box<dyn LLMProvider> {
         LLMBuilder::new()
             .backend(LLMBackend::OpenRouter)
             .api_key(self.api_key.clone())
-            .model("google/gemma-3-27b-it")
+            .model(self.model.clone())
+            .system(char.get_description())
             .build()
             .expect("Failed to build LLM (Openrouter)")
     }

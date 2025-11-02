@@ -1,5 +1,6 @@
 mod chat;
 mod message;
+mod persona;
 mod settings;
 
 use std::sync::Arc;
@@ -7,11 +8,13 @@ use std::sync::Arc;
 use chat::Chat;
 use iced::widget::{Column, column, text_input};
 use iced::{Center, Task, Theme};
-use llm::LLMProvider;
 use llm::chat::ChatMessage;
 
 use crate::chat::MessageCommand;
-use crate::message::{Message, MessageOwner};
+use crate::message::Message;
+use crate::persona::Persona;
+use crate::persona::char::Char;
+use crate::persona::user::User;
 use crate::settings::Settings;
 
 pub fn main() -> iced::Result {
@@ -24,7 +27,8 @@ struct App {
     input_message: String,
     chat: Chat,
     settings: Settings,
-    llm: Arc<Box<dyn LLMProvider>>,
+    char: Arc<dyn Persona>,
+    user: Arc<dyn Persona>,
 }
 
 #[derive(Debug, Clone)]
@@ -38,13 +42,12 @@ enum AppCommand {
 
 impl App {
     fn new() -> Self {
-        let settings = Settings::load();
-        let llm = settings.llm();
         App {
             input_message: String::new(),
             chat: Chat::default(),
-            settings,
-            llm: Arc::new(llm),
+            settings: Settings::load(),
+            char: Arc::new(Char::default()),
+            user: Arc::new(User::default()),
         }
     }
 
@@ -54,8 +57,8 @@ impl App {
             AppCommand::CreateMessage => {
                 self.create_message();
                 let chat_history = self.chat.get_chat_messages();
-                self.chat.push(Message::empty(MessageOwner::Char));
-                return self.get_response(&self.llm, chat_history);
+                self.chat.push(Message::empty(self.char.clone()));
+                return self.get_response(chat_history);
             }
             AppCommand::StreamOk(text) => self.chat.append_last_message(text.as_str()),
             AppCommand::StreamError => todo!(),
@@ -63,9 +66,8 @@ impl App {
                 println!("Command {:?} from {idx}", message_command);
                 match message_command {
                     MessageCommand::Next => {
-                        if self.chat.next(idx) {
-                            return self
-                                .get_response(&self.llm, self.chat.get_chat_messages_until(idx));
+                        if self.chat.next(idx, self.char.clone()) {
+                            return self.get_response(self.chat.get_chat_messages_until(idx));
                         }
                     }
                     MessageCommand::Previous => self.chat.previous(idx),
@@ -94,21 +96,17 @@ impl App {
 
     fn create_message(&mut self) {
         let text = self.input_message.clone();
-        self.chat.push(Message::new(MessageOwner::User, text));
+        self.chat.push(Message::new(self.user.clone(), text));
         self.input_message.clear();
     }
 
-    fn get_response(
-        &self,
-        llm: &Arc<Box<dyn LLMProvider>>,
-        messages: Vec<ChatMessage>,
-    ) -> Task<AppCommand> {
+    fn get_response(&self, messages: Vec<ChatMessage>) -> Task<AppCommand> {
+        let llm = self.settings.llm(self.char.clone());
         println!("Getting response with chat history:");
         for mes in &messages {
             println!("{:?}", mes);
         }
         println!();
-        let llm = llm.clone();
         Task::perform(async move { llm.chat_stream(&messages).await }, |res| res).and_then(|res| {
             Task::run(res, |chunk| match chunk {
                 Ok(text) => AppCommand::StreamOk(text),

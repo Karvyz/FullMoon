@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::Local;
 use iced::alignment::Horizontal;
 use iced::font::Weight;
@@ -11,7 +13,8 @@ use iced::{Font, Length};
 use llm::chat::ChatMessage;
 
 use crate::AppCommand;
-use crate::message::{Message, MessageOwner};
+use crate::message::Message;
+use crate::persona::Persona;
 
 #[derive(Debug, Clone)]
 pub enum MessageCommand {
@@ -75,7 +78,7 @@ impl Chat {
         }
     }
 
-    pub fn next(&mut self, idx: usize) -> bool {
+    pub fn next(&mut self, idx: usize, char: Arc<dyn Persona>) -> bool {
         match idx == 0 {
             true => match self.selected < self.childs.len() - 1 {
                 true => {
@@ -84,12 +87,11 @@ impl Chat {
                 }
                 false => {
                     self.selected += 1;
-                    self.childs
-                        .push(MessageNode::new(Message::empty(MessageOwner::Char)));
+                    self.childs.push(MessageNode::new(Message::empty(char)));
                     true
                 }
             },
-            false => self.childs[self.selected].next(idx - 1),
+            false => self.childs[self.selected].next(idx - 1, char),
         }
     }
 
@@ -116,20 +118,13 @@ impl Chat {
                 container(
                     row![
                         container(
-                            image(match current_node.message.owner {
-                                MessageOwner::User => "assets/user.png",
-                                MessageOwner::Char => "assets/char.png",
-                            })
-                            .width(100)
-                            .height(100)
+                            image(current_node.message.owner.get_avatar_uri())
+                                .width(100)
+                                .height(100)
                         ),
                         column![
                             rich_text![
-                                span(match current_node.message.owner {
-                                    MessageOwner::User => "User",
-                                    MessageOwner::Char => "Char",
-                                })
-                                .font(Font {
+                                span(current_node.message.owner.get_name()).font(Font {
                                     weight: Weight::Bold,
                                     ..Font::default()
                                 }),
@@ -231,7 +226,7 @@ impl MessageNode {
         }
     }
 
-    fn next(&mut self, idx: usize) -> bool {
+    fn next(&mut self, idx: usize, char: Arc<dyn Persona>) -> bool {
         match idx == 0 {
             true => match self.selected < self.childs.len() - 1 {
                 true => {
@@ -240,12 +235,11 @@ impl MessageNode {
                 }
                 false => {
                     self.selected += 1;
-                    self.childs
-                        .push(MessageNode::new(Message::empty(MessageOwner::Char)));
+                    self.childs.push(MessageNode::new(Message::empty(char)));
                     true
                 }
             },
-            false => self.childs[self.selected].next(idx - 1),
+            false => self.childs[self.selected].next(idx - 1, char),
         }
     }
 }

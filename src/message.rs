@@ -1,24 +1,23 @@
+use std::sync::Arc;
+
+use crate::persona::Persona;
 use llm::chat::ChatMessage;
 
-#[derive(Debug, Clone)]
-pub enum MessageOwner {
-    User,
-    Char,
-}
-
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Message {
-    pub owner: MessageOwner,
+    pub owner: Arc<dyn Persona>,
     pub text: String,
 }
 
 impl Message {
-    pub fn new(owner: MessageOwner, text: String) -> Self {
-        let text = text.trim().to_string();
-        Message { owner, text }
+    pub fn new(owner: Arc<dyn Persona>, text: String) -> Self {
+        Message {
+            owner,
+            text: text.trim().to_string(),
+        }
     }
 
-    pub fn empty(owner: MessageOwner) -> Self {
+    pub fn empty(owner: Arc<dyn Persona>) -> Self {
         Message {
             owner,
             text: String::new(),
@@ -26,9 +25,6 @@ impl Message {
     }
 
     pub fn to_chat_message(&self) -> ChatMessage {
-        match self.owner {
-            MessageOwner::User => ChatMessage::user().content(self.text.clone()).build(),
-            MessageOwner::Char => ChatMessage::assistant().content(self.text.clone()).build(),
-        }
+        self.owner.create_message(self.text.clone())
     }
 }
