@@ -4,11 +4,13 @@ mod persona;
 mod settings;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use chat::Chat;
-use iced::widget::{Column, column, text_input};
-use iced::{Center, Task, Theme};
+use iced::widget::{Stack, button, column, container, text, text_input};
+use iced::{Border, Center, Element, Length, Task, Theme};
 use llm::chat::ChatMessage;
+use tokio::time::sleep;
 
 use crate::chat::MessageCommand;
 use crate::message::Message;
@@ -29,6 +31,7 @@ struct App {
     settings: Settings,
     char: Arc<dyn Persona>,
     user: Arc<dyn Persona>,
+    error: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -36,8 +39,9 @@ enum AppCommand {
     InputChange(String),
     CreateMessage,
     StreamOk(String),
-    StreamError,
     MessageCommand(MessageCommand),
+    Error(String),
+    DismissError,
 }
 
 impl App {
@@ -48,6 +52,7 @@ impl App {
             settings: Settings::load(),
             char: Arc::new(Char::default()),
             user: Arc::new(User::default()),
+            error: None,
         }
     }
 
@@ -61,7 +66,6 @@ impl App {
                 return self.get_response(chat_history);
             }
             AppCommand::StreamOk(text) => self.chat.append_last_message(text.as_str()),
-            AppCommand::StreamError => todo!(),
             AppCommand::MessageCommand(message_command) => match message_command {
                 MessageCommand::Next(idx) => {
                     if self.chat.next(idx, self.char.clone()) {
@@ -70,25 +74,54 @@ impl App {
                 }
                 MessageCommand::Previous(idx) => self.chat.previous(idx),
             },
+            AppCommand::Error(e) => {
+                self.error = Some(e);
+                return Task::perform(sleep(Duration::from_secs(3)), |_| AppCommand::DismissError);
+            }
+            AppCommand::DismissError => self.error = None,
         }
         Task::none()
     }
 
-    fn view(&self) -> Column<'_, AppCommand> {
-        column![
-            self.chat.view(),
-            text_input("What needs to be done?", &self.input_message)
-                .id("user-input")
-                .on_input(AppCommand::InputChange)
-                .on_submit(AppCommand::CreateMessage),
-        ]
-        .padding(20)
-        .align_x(Center)
-        .spacing(10)
+    fn view(&self) -> Element<'_, AppCommand> {
+        let mut stack = Stack::new();
+        stack = stack.push(
+            column![
+                self.chat.view(),
+                text_input("What needs to be done?", &self.input_message)
+                    .id("user-input")
+                    .on_input(AppCommand::InputChange)
+                    .on_submit(AppCommand::CreateMessage),
+                button("Error").on_press(AppCommand::Error("Button".to_string()))
+            ]
+            .padding(20)
+            .align_x(Center)
+            .spacing(10),
+        );
+        if let Some(e) = &self.error {
+            stack = stack.push(
+                container(container(text(e)).padding(20).style(Self::error_style))
+                    .center_x(Length::Fill)
+                    .padding(20),
+            );
+        }
+        stack.into()
     }
 
     fn theme(&self) -> Theme {
         Theme::TokyoNight
+    }
+
+    fn error_style(theme: &Theme) -> iced::widget::container::Style {
+        let palette = theme.extended_palette();
+        container::rounded_box(theme)
+            .background(palette.background.weak.color)
+            .border(
+                Border::default()
+                    .rounded(12)
+                    .width(2)
+                    .color(palette.danger.strong.color),
+            )
     }
 
     fn create_message(&mut self) {
@@ -107,7 +140,7 @@ impl App {
         Task::perform(async move { llm.chat_stream(&messages).await }, |res| res).and_then(|res| {
             Task::run(res, |chunk| match chunk {
                 Ok(text) => AppCommand::StreamOk(text),
-                Err(_) => AppCommand::StreamError,
+                Err(e) => AppCommand::Error(e.to_string()),
             })
         })
     }
