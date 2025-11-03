@@ -18,8 +18,14 @@ use crate::persona::Persona;
 
 #[derive(Debug, Clone)]
 pub enum MessageCommand {
-    Next,
-    Previous,
+    Next(usize),
+    Previous(usize),
+}
+
+impl From<MessageCommand> for AppCommand {
+    fn from(message_command: MessageCommand) -> Self {
+        AppCommand::MessageCommand(message_command)
+    }
 }
 
 #[derive(Default)]
@@ -139,12 +145,8 @@ impl Chat {
                         column![
                             text(format!("{}/{}", selected + 1, nb_childs))
                                 .align_x(Horizontal::Center),
-                            button(">")
-                                .on_press(AppCommand::MessageCommand(idx, MessageCommand::Next)),
-                            button("<").on_press(AppCommand::MessageCommand(
-                                idx,
-                                MessageCommand::Previous
-                            ))
+                            button(">").on_press(MessageCommand::Next(idx).into()),
+                            button("<").on_press(MessageCommand::Previous(idx).into())
                         ]
                         .spacing(2)
                         .width(Length::Shrink)

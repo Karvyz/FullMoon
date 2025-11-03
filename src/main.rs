@@ -37,7 +37,7 @@ enum AppCommand {
     CreateMessage,
     StreamOk(String),
     StreamError,
-    MessageCommand(usize, MessageCommand),
+    MessageCommand(MessageCommand),
 }
 
 impl App {
@@ -62,17 +62,14 @@ impl App {
             }
             AppCommand::StreamOk(text) => self.chat.append_last_message(text.as_str()),
             AppCommand::StreamError => todo!(),
-            AppCommand::MessageCommand(idx, message_command) => {
-                println!("Command {:?} from {idx}", message_command);
-                match message_command {
-                    MessageCommand::Next => {
-                        if self.chat.next(idx, self.char.clone()) {
-                            return self.get_response(self.chat.get_chat_messages_until(idx));
-                        }
+            AppCommand::MessageCommand(message_command) => match message_command {
+                MessageCommand::Next(idx) => {
+                    if self.chat.next(idx, self.char.clone()) {
+                        return self.get_response(self.chat.get_chat_messages_until(idx));
                     }
-                    MessageCommand::Previous => self.chat.previous(idx),
                 }
-            }
+                MessageCommand::Previous(idx) => self.chat.previous(idx),
+            },
         }
         Task::none()
     }
