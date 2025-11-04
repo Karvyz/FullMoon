@@ -1,9 +1,12 @@
 use std::time::Duration;
 
 use iced::{
-    Border, Element, Length, Task, Theme,
-    widget::{Stack, container, text},
+    Border, Element,
+    Length::{self, Fill},
+    Task, Theme,
+    widget::{Row, Stack, button, column, container, row, text},
 };
+use settings_page::{SettingsCommand, SettingsPage};
 use tokio::time::sleep;
 
 use crate::{
@@ -15,6 +18,7 @@ mod chat_page;
 mod message;
 mod persona;
 mod settings;
+mod settings_page;
 
 pub fn main() -> iced::Result {
     iced::application("FullMoon", App::update, App::view)
@@ -24,6 +28,7 @@ pub fn main() -> iced::Result {
 
 struct App {
     chat_page: ChatPage,
+    settings_page: Option<SettingsPage>,
     settings: Settings,
     error: Option<String>,
 }
@@ -31,6 +36,9 @@ struct App {
 #[derive(Debug, Clone)]
 enum AppCommand {
     ChatCommand(ChatCommand),
+    ToggleSettings,
+    SettignsCommand(SettingsCommand),
+    UpdateSettings(Settings),
     Error(String),
     DismissError,
 }
@@ -39,6 +47,7 @@ impl App {
     fn new() -> Self {
         App {
             chat_page: ChatPage::new(),
+            settings_page: None,
             settings: Settings::load(),
             error: None,
         }
@@ -49,6 +58,18 @@ impl App {
             AppCommand::ChatCommand(chat_command) => {
                 return self.chat_page.update(chat_command, &self.settings);
             }
+            AppCommand::ToggleSettings => {
+                self.settings_page = match self.settings_page {
+                    None => Some(SettingsPage::new(&self.settings)),
+                    Some(_) => None,
+                };
+            }
+            AppCommand::SettignsCommand(settings_command) => {
+                if let Some(settings_page) = &mut self.settings_page {
+                    return settings_page.update(settings_command);
+                }
+            }
+            AppCommand::UpdateSettings(settings) => self.settings = settings,
             AppCommand::Error(e) => {
                 self.error = Some(e);
                 return Task::perform(sleep(Duration::from_secs(3)), |_| AppCommand::DismissError);
@@ -59,8 +80,25 @@ impl App {
     }
 
     fn view(&self) -> Element<'_, AppCommand> {
+        let mut pages = Row::new().spacing(20);
+        if let Some(settings_page) = &self.settings_page {
+            pages = pages.push(settings_page.view())
+        }
+        pages = pages.push(self.chat_page.view());
+
         let mut stack = Stack::new();
-        stack = stack.push(self.chat_page.view());
+        stack = stack.push(column![
+            row![
+                button("User").width(Fill),
+                button("Characters").width(Fill),
+                button("Settings")
+                    .width(Fill)
+                    .on_press(AppCommand::ToggleSettings)
+            ]
+            .padding(20)
+            .spacing(20),
+            pages
+        ]);
         if let Some(e) = &self.error {
             stack = stack.push(
                 container(container(text(e)).padding(20).style(Self::error_style))

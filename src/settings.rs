@@ -8,7 +8,7 @@ use std::{fs, sync::Arc};
 
 use crate::persona::Persona;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Settings {
     api_key: String,
     model: String,
@@ -24,6 +24,18 @@ impl Default for Settings {
 }
 
 impl Settings {
+    pub fn new(api_key: String, model: String) -> Self {
+        Settings { api_key, model }
+    }
+
+    pub fn api_key(&self) -> String {
+        self.api_key.clone()
+    }
+
+    pub fn model(&self) -> String {
+        self.model.clone()
+    }
+
     pub fn llm(&self, char: Arc<dyn Persona>) -> Box<dyn LLMProvider> {
         LLMBuilder::new()
             .backend(LLMBackend::OpenRouter)
