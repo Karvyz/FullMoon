@@ -1,32 +1,19 @@
 use std::sync::Arc;
 
 use chrono::Local;
-use iced::alignment::Horizontal;
-use iced::font::Weight;
-use iced::widget::keyed::Column;
-use iced::widget::text::Shaping;
-use iced::widget::{
-    Scrollable, button, column, container, image, rich_text, row, scrollable, span, text,
+use iced::{
+    Border, Element, Font,
+    Length::{self, Fill},
+    Theme,
+    alignment::Horizontal,
+    font::Weight,
+    widget::{
+        button, column, container, image, keyed::Column, rich_text, row, scrollable, span, text,
+    },
 };
-use iced::{Border, Length::Fill, Theme};
-use iced::{Font, Length};
 use llm::chat::ChatMessage;
 
-use crate::AppCommand;
-use crate::message::Message;
-use crate::persona::Persona;
-
-#[derive(Debug, Clone)]
-pub enum MessageCommand {
-    Next(usize),
-    Previous(usize),
-}
-
-impl From<MessageCommand> for AppCommand {
-    fn from(message_command: MessageCommand) -> Self {
-        AppCommand::MessageCommand(message_command)
-    }
-}
+use crate::{AppCommand, chat_page::MessageCommand, message::Message, persona::Persona};
 
 #[derive(Default)]
 pub struct Chat {
@@ -101,12 +88,13 @@ impl Chat {
         }
     }
 
-    pub fn view(&self) -> Scrollable<'_, AppCommand> {
+    pub fn view(&self) -> Element<'_, AppCommand> {
         scrollable(self.create_column_view())
             .anchor_bottom()
             .height(Fill)
             .width(Fill)
             .spacing(10)
+            .into()
     }
 
     fn create_column_view(&self) -> Column<'_, usize, AppCommand> {
@@ -139,7 +127,7 @@ impl Chat {
                             ],
                             text(current_node.message.text.clone())
                                 .width(Fill)
-                                .shaping(Shaping::Advanced)
+                                .shaping(iced::widget::text::Shaping::Advanced)
                         ]
                         .spacing(4),
                         column![

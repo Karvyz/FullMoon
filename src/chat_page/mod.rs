@@ -1,0 +1,113 @@
+use std::sync::Arc;
+
+use iced::{Element, Task, widget::text_input};
+use llm::chat::ChatMessage;
+
+use crate::{
+    AppCommand,
+    chat_page::chat::Chat,
+    message::Message,
+    persona::{Persona, char::Char, user::User},
+    settings::Settings,
+};
+
+mod chat;
+
+#[derive(Debug, Clone)]
+pub enum ChatCommand {
+    InputChange(String),
+    InputSubmit,
+    StreamOk(String),
+    MessageCommand(MessageCommand),
+}
+
+impl From<ChatCommand> for crate::AppCommand {
+    fn from(chat_command: ChatCommand) -> Self {
+        crate::AppCommand::ChatCommand(chat_command)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum MessageCommand {
+    Next(usize),
+    Previous(usize),
+}
+
+impl From<MessageCommand> for crate::AppCommand {
+    fn from(message_command: MessageCommand) -> Self {
+        crate::AppCommand::ChatCommand(ChatCommand::MessageCommand(message_command))
+    }
+}
+
+pub struct ChatPage {
+    chat: Chat,
+    input_message: String,
+    char: Arc<dyn Persona>,
+    user: Arc<dyn Persona>,
+}
+
+impl ChatPage {
+    pub fn new() -> Self {
+        ChatPage {
+            input_message: String::new(),
+            chat: Chat::default(),
+            char: Arc::new(Char::default()),
+            user: Arc::new(User::default()),
+        }
+    }
+
+    pub fn view(&self) -> Element<'_, AppCommand> {
+        iced::widget::column![
+            self.chat.view(),
+            text_input("What needs to be done?", &self.input_message)
+                .id("user-input")
+                .on_input(|t| ChatCommand::InputChange(t).into())
+                .on_submit(ChatCommand::InputSubmit.into()),
+        ]
+        .padding(20)
+        .spacing(10)
+        .into()
+    }
+
+    pub fn update(&mut self, chat_command: ChatCommand, settings: &Settings) -> Task<AppCommand> {
+        match chat_command {
+            ChatCommand::InputChange(input) => self.input_message = input,
+            ChatCommand::InputSubmit => {
+                self.create_message();
+                let chat_history = self.chat.get_chat_messages();
+                self.chat.push(Message::empty(self.char.clone()));
+                return self.get_response(settings, chat_history);
+            }
+            ChatCommand::StreamOk(text) => self.chat.append_last_message(text.as_str()),
+            ChatCommand::MessageCommand(message_command) => match message_command {
+                MessageCommand::Next(idx) => {
+                    if self.chat.next(idx, self.char.clone()) {
+                        return self.get_response(settings, self.chat.get_chat_messages_until(idx));
+                    }
+                }
+                MessageCommand::Previous(idx) => self.chat.previous(idx),
+            },
+        }
+        Task::none()
+    }
+
+    fn create_message(&mut self) {
+        let text = self.input_message.clone();
+        self.chat.push(Message::new(self.user.clone(), text));
+        self.input_message.clear();
+    }
+    fn get_response(&self, settings: &Settings, messages: Vec<ChatMessage>) -> Task<AppCommand> {
+        let llm = settings.llm(self.char.clone());
+        println!("Getting response with chat history:");
+        for mes in &messages {
+            println!("{:?}", mes);
+        }
+        println!();
+        Task::perform(async move { llm.chat_stream(&messages).await }, |res| res).and_then(|res| {
+            Task::run(res, |chunk| match chunk {
+                Ok(text) => ChatCommand::StreamOk(text).into(),
+                Err(e) => AppCommand::Error(e.to_string()),
+            })
+        })
+    }
+}

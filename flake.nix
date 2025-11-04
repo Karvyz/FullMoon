@@ -67,7 +67,6 @@
               cargo-deny
               cargo-edit
               cargo-watch
-              rust-analyzer
             ];
 
             env = with pkgs; {
