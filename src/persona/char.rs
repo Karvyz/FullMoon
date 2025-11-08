@@ -1,10 +1,32 @@
+use std::{error::Error, fs, path::PathBuf};
+
 use llm::chat::ChatMessage;
+use serde::{Deserialize, Serialize};
 
 use crate::persona::Persona;
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Char {
     name: String,
     description: String,
+}
+
+impl Char {
+    pub fn load_from_json(data: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(data)
+    }
+
+    pub fn save(&self, path: PathBuf) -> Result<(), Box<dyn Error>> {
+        if !path.exists() {
+            fs::create_dir_all(&path)?;
+        }
+
+        let config_path = path.join(format!("{}.json", self.name));
+        let content = serde_json::to_string_pretty(self)?;
+        fs::write(config_path, content)?;
+
+        Ok(())
+    }
 }
 
 impl Default for Char {

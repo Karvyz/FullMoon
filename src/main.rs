@@ -10,10 +10,12 @@ use settings_page::{SettingsCommand, SettingsPage};
 use tokio::time::sleep;
 
 use crate::{
+    char_selector_page::CharSelectorPage,
     chat_page::{ChatCommand, ChatPage},
     settings::Settings,
 };
 
+mod char_selector_page;
 mod chat_page;
 mod message;
 mod persona;
@@ -28,6 +30,7 @@ pub fn main() -> iced::Result {
 
 struct App {
     chat_page: ChatPage,
+    char_selector_page: Option<CharSelectorPage>,
     settings_page: Option<SettingsPage>,
     settings: Settings,
     error: Option<String>,
@@ -36,9 +39,14 @@ struct App {
 #[derive(Debug, Clone)]
 enum AppCommand {
     ChatCommand(ChatCommand),
+
+    ToggleChars,
+    SelectedChar(usize),
+
     ToggleSettings,
     SettignsCommand(SettingsCommand),
     UpdateSettings(Settings),
+
     Error(String),
     DismissError,
 }
@@ -47,6 +55,7 @@ impl App {
     fn new() -> Self {
         App {
             chat_page: ChatPage::new(),
+            char_selector_page: None,
             settings_page: None,
             settings: Settings::load(),
             error: None,
@@ -57,6 +66,17 @@ impl App {
         match message {
             AppCommand::ChatCommand(chat_command) => {
                 return self.chat_page.update(chat_command, &self.settings);
+            }
+            AppCommand::ToggleChars => {
+                self.char_selector_page = match self.char_selector_page {
+                    None => Some(CharSelectorPage::new()),
+                    Some(_) => None,
+                };
+            }
+            AppCommand::SelectedChar(char_idx) => {
+                if let Some(csp) = &self.char_selector_page {
+                    self.chat_page = ChatPage::with_char(csp.get(char_idx))
+                }
             }
             AppCommand::ToggleSettings => {
                 self.settings_page = match self.settings_page {
@@ -81,6 +101,9 @@ impl App {
 
     fn view(&self) -> Element<'_, AppCommand> {
         let mut pages = Row::new().spacing(20);
+        if let Some(char_selector_page) = &self.char_selector_page {
+            pages = pages.push(char_selector_page.view())
+        }
         if let Some(settings_page) = &self.settings_page {
             pages = pages.push(settings_page.view())
         }
@@ -90,7 +113,9 @@ impl App {
         stack = stack.push(column![
             row![
                 button("User").width(Fill),
-                button("Characters").width(Fill),
+                button("Characters")
+                    .width(Fill)
+                    .on_press(AppCommand::ToggleChars),
                 button("Settings")
                     .width(Fill)
                     .on_press(AppCommand::ToggleSettings)

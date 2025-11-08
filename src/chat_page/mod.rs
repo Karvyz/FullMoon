@@ -56,6 +56,15 @@ impl ChatPage {
         }
     }
 
+    pub fn with_char(char: Char) -> Self {
+        ChatPage {
+            input_message: String::new(),
+            chat: Chat::default(),
+            char: Arc::new(char),
+            user: Arc::new(User::default()),
+        }
+    }
+
     pub fn view(&self) -> Element<'_, AppCommand> {
         iced::widget::column![
             self.chat.view(),
