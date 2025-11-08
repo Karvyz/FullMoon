@@ -6,13 +6,10 @@ use iced::{
     widget::{button, column, container, keyed, row, scrollable, text},
 };
 
-use crate::{
-    AppCommand,
-    persona::{Persona, char::Char},
-};
+use crate::{AppCommand, persona::Persona};
 
 pub struct CharSelectorPage {
-    chars: Vec<Char>,
+    chars: Vec<Persona>,
 }
 
 impl CharSelectorPage {
@@ -31,7 +28,7 @@ impl CharSelectorPage {
         match fs::read_dir(&pathbuf) {
             Err(_) => {
                 println!("Cache not found. Writing default");
-                let char = Char::default();
+                let char = Persona::default_char();
                 if char.save(pathbuf).is_err() {
                     eprintln!("Writing default failed");
                 }
@@ -45,10 +42,10 @@ impl CharSelectorPage {
                     // Check if it's a file (not a directory)
                     if path.is_file() {
                         match fs::read_to_string(&path) {
-                            Ok(data) => match Char::load_from_json(&data) {
-                                Ok(char) => {
-                                    println!("Loaded {}", char.get_name());
-                                    chars.push(char);
+                            Ok(data) => match Persona::load_from_json(&data) {
+                                Ok(persona) => {
+                                    println!("Loaded {}", persona.get_name());
+                                    chars.push(persona);
                                 }
                                 Err(e) => {
                                     eprintln!("Error parsing {}: {}", path.to_str().unwrap(), e)
@@ -63,7 +60,7 @@ impl CharSelectorPage {
         Self { chars }
     }
 
-    pub fn get(&self, idx: usize) -> Char {
+    pub fn get(&self, idx: usize) -> Persona {
         self.chars[idx].clone()
     }
 

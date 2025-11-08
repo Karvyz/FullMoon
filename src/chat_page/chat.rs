@@ -71,7 +71,7 @@ impl Chat {
         }
     }
 
-    pub fn next(&mut self, idx: usize, char: Arc<dyn Persona>) -> bool {
+    pub fn next(&mut self, idx: usize, char: Arc<Persona>) -> bool {
         match idx == 0 {
             true => match self.selected < self.childs.len() - 1 {
                 true => {
@@ -80,7 +80,8 @@ impl Chat {
                 }
                 false => {
                     self.selected += 1;
-                    self.childs.push(MessageNode::new(Message::empty(char)));
+                    self.childs
+                        .push(MessageNode::new(Message::empty_from_char(char)));
                     true
                 }
             },
@@ -112,7 +113,7 @@ impl Chat {
                 container(
                     row![
                         container(
-                            image(current_node.message.owner.get_avatar_uri())
+                            image(current_node.message.get_avatar_uri())
                                 .width(100)
                                 .height(100)
                         ),
@@ -216,7 +217,7 @@ impl MessageNode {
         }
     }
 
-    fn next(&mut self, idx: usize, char: Arc<dyn Persona>) -> bool {
+    fn next(&mut self, idx: usize, char: Arc<Persona>) -> bool {
         match idx == 0 {
             true => match self.selected < self.childs.len() - 1 {
                 true => {
@@ -225,7 +226,8 @@ impl MessageNode {
                 }
                 false => {
                     self.selected += 1;
-                    self.childs.push(MessageNode::new(Message::empty(char)));
+                    self.childs
+                        .push(MessageNode::new(Message::empty_from_char(char)));
                     true
                 }
             },

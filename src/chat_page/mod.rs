@@ -4,11 +4,7 @@ use iced::{Element, Task, widget::text_input};
 use llm::chat::ChatMessage;
 
 use crate::{
-    AppCommand,
-    chat_page::chat::Chat,
-    message::Message,
-    persona::{Persona, char::Char, user::User},
-    settings::Settings,
+    AppCommand, chat_page::chat::Chat, message::Message, persona::Persona, settings::Settings,
 };
 
 mod chat;
@@ -42,8 +38,8 @@ impl From<MessageCommand> for crate::AppCommand {
 pub struct ChatPage {
     chat: Chat,
     input_message: String,
-    char: Arc<dyn Persona>,
-    user: Arc<dyn Persona>,
+    char: Arc<Persona>,
+    user: Arc<Persona>,
 }
 
 impl ChatPage {
@@ -51,17 +47,17 @@ impl ChatPage {
         ChatPage {
             input_message: String::new(),
             chat: Chat::default(),
-            char: Arc::new(Char::default()),
-            user: Arc::new(User::default()),
+            char: Arc::new(Persona::default_char()),
+            user: Arc::new(Persona::default_user()),
         }
     }
 
-    pub fn with_char(char: Char) -> Self {
+    pub fn with_char(char: Persona) -> Self {
         ChatPage {
             input_message: String::new(),
             chat: Chat::default(),
             char: Arc::new(char),
-            user: Arc::new(User::default()),
+            user: Arc::new(Persona::default_user()),
         }
     }
 
@@ -84,7 +80,7 @@ impl ChatPage {
             ChatCommand::InputSubmit => {
                 self.create_message();
                 let chat_history = self.chat.get_chat_messages();
-                self.chat.push(Message::empty(self.char.clone()));
+                self.chat.push(Message::empty_from_char(self.char.clone()));
                 return self.get_response(settings, chat_history);
             }
             ChatCommand::StreamOk(text) => self.chat.append_last_message(text.as_str()),
@@ -102,7 +98,7 @@ impl ChatPage {
 
     fn create_message(&mut self) {
         let text = self.input_message.clone();
-        self.chat.push(Message::new(self.user.clone(), text));
+        self.chat.push(Message::from_user(self.user.clone(), text));
         self.input_message.clear();
     }
     fn get_response(&self, settings: &Settings, messages: Vec<ChatMessage>) -> Task<AppCommand> {
