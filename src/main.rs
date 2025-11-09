@@ -54,7 +54,7 @@ enum AppCommand {
 impl App {
     fn new() -> Self {
         App {
-            chat_page: ChatPage::new(),
+            chat_page: ChatPage::try_load(),
             char_selector_page: None,
             settings_page: None,
             settings: Settings::load(),

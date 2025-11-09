@@ -4,7 +4,11 @@ use iced::{Element, Task, widget::text_input};
 use llm::chat::ChatMessage;
 
 use crate::{
-    AppCommand, chat_page::chat::Chat, message::Message, persona::Persona, settings::Settings,
+    AppCommand,
+    chat_page::chat::Chat,
+    message::Message,
+    persona::{Persona, PersonaLoader},
+    settings::Settings,
 };
 
 mod chat;
@@ -42,13 +46,22 @@ pub struct ChatPage {
     user: Arc<Persona>,
 }
 
-impl ChatPage {
-    pub fn new() -> Self {
+impl Default for ChatPage {
+    fn default() -> Self {
         ChatPage {
             input_message: String::new(),
             chat: Chat::default(),
             char: Arc::new(Persona::default_char()),
             user: Arc::new(Persona::default_user()),
+        }
+    }
+}
+
+impl ChatPage {
+    pub fn try_load() -> Self {
+        match PersonaLoader::load_most_recent_from_cache("personas") {
+            Some(char) => ChatPage::with_char(char),
+            None => ChatPage::default(),
         }
     }
 
