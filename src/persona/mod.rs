@@ -1,33 +1,39 @@
 use std::{error::Error, fs, path::PathBuf, time::SystemTime};
 
-use serde::{Deserialize, Serialize};
+use crate::persona::{basic::Basic, card::Card};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+mod basic;
+mod card;
+
+#[derive(Debug, Clone)]
+pub enum PType {
+    Basic(Basic),
+    Card(Card),
+}
+
+#[derive(Debug, Clone)]
 pub struct Persona {
-    name: String,
-    description: String,
+    ptype: PType,
     avatar_uri: Option<String>,
 }
 
 impl Persona {
+    pub fn new(ptype: PType, avatar_uri: Option<String>) -> Self {
+        Persona { ptype, avatar_uri }
+    }
+
     pub fn default_user() -> Self {
         Self {
-            name: "User".to_string(),
-            description: String::new(),
+            ptype: Basic::new("User", ""),
             avatar_uri: None,
         }
     }
 
     pub fn default_char() -> Self {
         Self {
-            name: "Luna".to_string(),
-            description: "You are Luna, an helpfull AI assistant.".to_string(),
+            ptype: Basic::new("Luna", "You are Luna, an helpfull AI assistant."),
             avatar_uri: None,
         }
-    }
-
-    pub fn load_from_json(data: &str) -> Result<Self, serde_json::Error> {
-        serde_json::from_str(data)
     }
 
     pub fn save(&self, path: PathBuf) -> Result<(), Box<dyn Error>> {
@@ -35,22 +41,31 @@ impl Persona {
             fs::create_dir_all(&path)?;
         }
 
-        let config_path = path.join(format!("{}.json", self.name));
-        let content = serde_json::to_string_pretty(self)?;
+        let config_path = path.join(format!("{}.json", self.name()));
+        let content = match &self.ptype {
+            PType::Basic(basic) => serde_json::to_string_pretty(basic)?,
+            PType::Card(card) => serde_json::to_string_pretty(card)?,
+        };
         fs::write(config_path, content)?;
 
         Ok(())
     }
 
-    pub fn get_name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> String {
+        match &self.ptype {
+            PType::Basic(basic) => basic.name(),
+            PType::Card(card) => todo!(),
+        }
     }
 
-    pub fn get_description(&self) -> String {
-        self.description.clone()
+    pub fn description(&self) -> String {
+        match &self.ptype {
+            PType::Basic(basic) => basic.description(),
+            PType::Card(card) => todo!(),
+        }
     }
 
-    pub fn get_avatar_uri(&self) -> Option<String> {
+    pub fn avatar_uri(&self) -> Option<String> {
         self.avatar_uri.clone()
     }
 }
@@ -114,22 +129,17 @@ impl PersonaLoader {
     }
 
     fn load(path: PathBuf) -> Result<Persona, Box<dyn Error>> {
-        match fs::read_to_string(&path) {
-            Ok(data) => match Persona::load_from_json(&data) {
-                Ok(persona) => {
-                    println!("Loaded {}", persona.get_name());
-                    Ok(persona)
-                }
-                Err(e) => {
-                    eprintln!("Error parsing {}: {}", path.to_str().unwrap(), e);
-                    Err(Box::new(e))
-                }
-            },
-            Err(e) => {
-                eprintln!("Error reading: {}", e);
-                Err(Box::new(e))
-            }
+        let data = fs::read_to_string(&path)?;
+        if let Ok(basic) = Basic::load_from_json(&data) {
+            let persona = Persona::new(basic.into(), None);
+            println!("Loaded {}", persona.name());
+            return Ok(persona);
         }
+
+        let card = Card::load_from_json(&data)?;
+        let persona = Persona::new(card.into(), None);
+        println!("Loaded {}", persona.name());
+        Ok(persona)
     }
 
     fn cache_path(subdir: &str) -> PathBuf {

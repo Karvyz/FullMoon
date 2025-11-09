@@ -41,7 +41,7 @@ impl Message {
     }
 
     pub fn get_avatar_uri(&self) -> String {
-        match self.owner.get_avatar_uri() {
+        match self.owner.avatar_uri() {
             Some(uri) => uri,
             None => match self.owner_type {
                 OwnerType::User => "assets/user.png".to_string(),

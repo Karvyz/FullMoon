@@ -41,7 +41,7 @@ impl Settings {
             .backend(LLMBackend::OpenRouter)
             .api_key(self.api_key.clone())
             .model(self.model.clone())
-            .system(char.get_description())
+            .system(char.description())
             .build()
             .expect("Failed to build LLM (Openrouter)")
     }

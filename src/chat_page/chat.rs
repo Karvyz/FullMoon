@@ -119,7 +119,7 @@ impl Chat {
                         ),
                         column![
                             rich_text![
-                                span(current_node.message.owner.get_name()).font(Font {
+                                span(current_node.message.owner.name()).font(Font {
                                     weight: Weight::Bold,
                                     ..Font::default()
                                 }),
