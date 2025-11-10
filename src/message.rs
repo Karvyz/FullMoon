@@ -25,12 +25,16 @@ impl Message {
         }
     }
 
-    pub fn empty_from_char(char: Arc<Persona>) -> Self {
+    pub fn from_char(char: Arc<Persona>, text: String) -> Self {
         Message {
             owner: char,
             owner_type: OwnerType::Char,
-            text: String::new(),
+            text: text.trim().to_string(),
         }
+    }
+
+    pub fn empty_from_char(char: Arc<Persona>) -> Self {
+        Self::from_char(char, String::new())
     }
 
     pub fn to_chat_message(&self) -> ChatMessage {

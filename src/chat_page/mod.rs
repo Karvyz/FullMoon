@@ -66,10 +66,11 @@ impl ChatPage {
     }
 
     pub fn with_char(char: Persona) -> Self {
+        let arcpersona = Arc::new(char);
         ChatPage {
             input_message: String::new(),
-            chat: Chat::default(),
-            char: Arc::new(char),
+            chat: Chat::with_messages(&arcpersona),
+            char: arcpersona,
             user: Arc::new(Persona::default_user()),
         }
     }

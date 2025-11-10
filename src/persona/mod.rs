@@ -54,14 +54,28 @@ impl Persona {
     pub fn name(&self) -> String {
         match &self.ptype {
             PType::Basic(basic) => basic.name(),
-            PType::Card(card) => todo!(),
+            PType::Card(card) => card.name(),
         }
     }
 
     pub fn description(&self) -> String {
         match &self.ptype {
             PType::Basic(basic) => basic.description(),
-            PType::Card(card) => todo!(),
+            PType::Card(card) => card.description(),
+        }
+    }
+
+    pub fn system_prompt(&self) -> String {
+        match &self.ptype {
+            PType::Basic(basic) => basic.description(),
+            PType::Card(card) => card.persona_prompt(),
+        }
+    }
+
+    pub fn greetings(&self) -> Option<Vec<String>> {
+        match &self.ptype {
+            PType::Basic(_) => None,
+            PType::Card(card) => Some(card.greetings()),
         }
     }
 
@@ -130,15 +144,15 @@ impl PersonaLoader {
 
     fn load(path: PathBuf) -> Result<Persona, Box<dyn Error>> {
         let data = fs::read_to_string(&path)?;
-        if let Ok(basic) = Basic::load_from_json(&data) {
-            let persona = Persona::new(basic.into(), None);
-            println!("Loaded {}", persona.name());
+        if let Ok(card) = Card::load_from_json(&data) {
+            let persona = Persona::new(card.into(), None);
+            println!("Loaded card {}", persona.name());
             return Ok(persona);
         }
 
-        let card = Card::load_from_json(&data)?;
-        let persona = Persona::new(card.into(), None);
-        println!("Loaded {}", persona.name());
+        let basic = Basic::load_from_json(&data)?;
+        let persona = Persona::new(basic.into(), None);
+        println!("Loaded simple {}", persona.name());
         Ok(persona)
     }
 

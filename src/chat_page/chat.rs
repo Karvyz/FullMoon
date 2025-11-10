@@ -22,6 +22,19 @@ pub struct Chat {
 }
 
 impl Chat {
+    pub fn with_messages(char: &Arc<Persona>) -> Self {
+        Chat {
+            childs: match char.greetings() {
+                Some(messages) => messages
+                    .iter()
+                    .map(|m| MessageNode::new(Message::from_char(char.clone(), m.clone())))
+                    .collect(),
+                None => vec![],
+            },
+            selected: 0,
+        }
+    }
+
     pub fn push(&mut self, message: Message) {
         match self.childs.is_empty() {
             true => self.childs.push(MessageNode::new(message)),
