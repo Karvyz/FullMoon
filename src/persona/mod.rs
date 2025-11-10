@@ -1,5 +1,7 @@
 use std::{error::Error, fs, path::PathBuf, time::SystemTime};
 
+use anyhow::{Result, anyhow};
+
 use crate::persona::{basic::Basic, card::Card};
 
 mod basic;
@@ -132,36 +134,29 @@ impl PersonaLoader {
         personas
     }
 
-    pub fn load_most_recent_from_cache(subdir: &str) -> Option<Persona> {
-        let path = Self::cache_path(subdir);
-        let mut most_recent_file: Option<(PathBuf, SystemTime)> = None;
-
-        // Read directory contents and find the most recent file
-        for entry in fs::read_dir(path).unwrap() {
-            let entry = entry.unwrap();
+    pub fn load_most_recent_from_cache(subdir: &str) -> Result<Persona> {
+        let cache_path = Self::cache_path(subdir);
+        let mut most_recent_file: Option<PathBuf> = None;
+        let mut most_recent_change = SystemTime::UNIX_EPOCH;
+        for entry in (fs::read_dir(cache_path)?).flatten() {
             let path = entry.path();
 
             // Check if it's a file (not a directory)
             if path.is_file() {
                 let modified_time = Self::modified_time(&path);
-                match most_recent_file {
-                    None => most_recent_file = Some((path, modified_time)),
-                    Some((_, current_time)) => {
-                        if modified_time > current_time {
-                            most_recent_file = Some((path, modified_time));
-                        }
-                    }
+                if modified_time > most_recent_change {
+                    most_recent_change = modified_time;
+                    most_recent_file = Some(path)
                 }
             }
         }
-
         match most_recent_file {
-            None => None,
-            Some((path, _)) => Self::load(path).ok(),
+            Some(path) => Self::load(path),
+            None => Err(anyhow!("No file found")),
         }
     }
 
-    fn load(path: PathBuf) -> Result<Persona, Box<dyn Error>> {
+    fn load(path: PathBuf) -> Result<Persona> {
         let data = fs::read_to_string(&path)?;
         if let Ok(card) = Card::load_from_json(&data) {
             let persona = Persona::new(card.into(), None);

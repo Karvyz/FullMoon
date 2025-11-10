@@ -58,22 +58,32 @@ impl Default for ChatPage {
 }
 
 impl ChatPage {
-    pub fn try_load() -> Self {
-        match PersonaLoader::load_most_recent_from_cache("personas") {
-            Some(char) => ChatPage::with_char(char),
-            None => ChatPage::default(),
+    pub fn new(char: Persona, user: Persona) -> Self {
+        let char = Arc::new(char);
+        let user = Arc::new(user);
+        ChatPage {
+            input_message: String::new(),
+            chat: Chat::with_messages(&char, &user),
+            char,
+            user,
         }
     }
 
-    pub fn with_char(char: Persona) -> Self {
-        let arcpersona = Arc::new(char);
-        let default_user = Arc::new(Persona::default_user());
-        ChatPage {
-            input_message: String::new(),
-            chat: Chat::with_messages(&arcpersona, &default_user),
-            char: arcpersona,
-            user: default_user,
-        }
+    pub fn try_load() -> Self {
+        let char = PersonaLoader::load_most_recent_from_cache("personas")
+            .unwrap_or(Persona::default_char());
+        let user =
+            PersonaLoader::load_most_recent_from_cache("user").unwrap_or(Persona::default_user());
+        ChatPage::new(char, user)
+    }
+
+    pub fn set_char(&mut self, char: Persona) {
+        self.char = Arc::new(char);
+        self.new_chat();
+    }
+
+    pub fn new_chat(&mut self) {
+        self.chat = Chat::with_messages(&self.char, &self.user);
     }
 
     pub fn view(&self) -> Element<'_, AppCommand> {

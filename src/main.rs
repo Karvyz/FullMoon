@@ -75,7 +75,7 @@ impl App {
             }
             AppCommand::SelectedChar(char_idx) => {
                 if let Some(csp) = &self.char_selector_page {
-                    self.chat_page = ChatPage::with_char(csp.get(char_idx))
+                    self.chat_page.set_char(csp.get(char_idx))
                 }
             }
             AppCommand::ToggleSettings => {
