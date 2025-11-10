@@ -36,12 +36,12 @@ impl Settings {
         self.model.clone()
     }
 
-    pub fn llm(&self, char: Arc<Persona>) -> Box<dyn LLMProvider> {
+    pub fn llm(&self, char: &Arc<Persona>, user: &Arc<Persona>) -> Box<dyn LLMProvider> {
         LLMBuilder::new()
             .backend(LLMBackend::OpenRouter)
             .api_key(self.api_key.clone())
             .model(self.model.clone())
-            .system(char.system_prompt())
+            .system(char.system_prompt(Some(&user.name())))
             .build()
             .expect("Failed to build LLM (Openrouter)")
     }

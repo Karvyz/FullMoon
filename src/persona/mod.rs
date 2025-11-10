@@ -58,29 +58,48 @@ impl Persona {
         }
     }
 
-    pub fn description(&self) -> String {
-        match &self.ptype {
-            PType::Basic(basic) => basic.description(),
-            PType::Card(card) => card.description(),
-        }
+    pub fn description(&self, partner_name: Option<&str>) -> String {
+        self.replace_names(
+            match &self.ptype {
+                PType::Basic(basic) => basic.description(),
+                PType::Card(card) => card.description(),
+            },
+            partner_name,
+        )
     }
 
-    pub fn system_prompt(&self) -> String {
-        match &self.ptype {
-            PType::Basic(basic) => basic.description(),
-            PType::Card(card) => card.persona_prompt(),
-        }
+    pub fn system_prompt(&self, partner_name: Option<&str>) -> String {
+        self.replace_names(
+            match &self.ptype {
+                PType::Basic(basic) => basic.description(),
+                PType::Card(card) => card.persona_prompt(),
+            },
+            partner_name,
+        )
     }
 
-    pub fn greetings(&self) -> Option<Vec<String>> {
+    pub fn greetings(&self, partner_name: Option<&str>) -> Option<Vec<String>> {
         match &self.ptype {
             PType::Basic(_) => None,
-            PType::Card(card) => Some(card.greetings()),
+            PType::Card(card) => Some(
+                card.greetings()
+                    .into_iter()
+                    .map(|g| self.replace_names(g, partner_name))
+                    .collect(),
+            ),
         }
     }
 
     pub fn avatar_uri(&self) -> Option<String> {
         self.avatar_uri.clone()
+    }
+
+    fn replace_names(&self, s: String, partner_name: Option<&str>) -> String {
+        let replaced_char_name = s.replace("{{char}}", &self.name());
+        match partner_name {
+            Some(name) => replaced_char_name.replace("{{user}}", name),
+            None => replaced_char_name,
+        }
     }
 }
 

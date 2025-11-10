@@ -30,7 +30,7 @@ impl CharSelectorPage {
             keyed_column = keyed_column.push(
                 idx,
                 container(row![
-                    column![text(char.name()), text(char.description())],
+                    column![text(char.name()), text(char.description(None))],
                     button("Select").on_press(AppCommand::SelectedChar(idx))
                 ]),
             )

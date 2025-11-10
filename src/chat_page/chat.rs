@@ -22,9 +22,9 @@ pub struct Chat {
 }
 
 impl Chat {
-    pub fn with_messages(char: &Arc<Persona>) -> Self {
+    pub fn with_messages(char: &Arc<Persona>, user: &Arc<Persona>) -> Self {
         Chat {
-            childs: match char.greetings() {
+            childs: match char.greetings(Some(&user.name())) {
                 Some(messages) => messages
                     .iter()
                     .map(|m| MessageNode::new(Message::from_char(char.clone(), m.clone())))

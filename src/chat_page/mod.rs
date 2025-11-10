@@ -67,11 +67,12 @@ impl ChatPage {
 
     pub fn with_char(char: Persona) -> Self {
         let arcpersona = Arc::new(char);
+        let default_user = Arc::new(Persona::default_user());
         ChatPage {
             input_message: String::new(),
-            chat: Chat::with_messages(&arcpersona),
+            chat: Chat::with_messages(&arcpersona, &default_user),
             char: arcpersona,
-            user: Arc::new(Persona::default_user()),
+            user: default_user,
         }
     }
 
@@ -116,7 +117,7 @@ impl ChatPage {
         self.input_message.clear();
     }
     fn get_response(&self, settings: &Settings, messages: Vec<ChatMessage>) -> Task<AppCommand> {
-        let llm = settings.llm(self.char.clone());
+        let llm = settings.llm(&self.char, &self.user);
         println!("Getting response with chat history:");
         for mes in &messages {
             println!("{:?}", mes);
