@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use iced::{Element, Task, widget::text_input};
+use iced::{Element, Task, Theme, widget::text_input};
 use llm::chat::ChatMessage;
 
 use crate::{
@@ -86,9 +86,9 @@ impl ChatPage {
         self.chat = Chat::with_messages(&self.char, &self.user);
     }
 
-    pub fn view(&self) -> Element<'_, AppCommand> {
+    pub fn view(&self, theme: &Theme) -> Element<'_, AppCommand> {
         iced::widget::column![
-            self.chat.view(),
+            self.chat.view(theme),
             text_input("What needs to be done?", &self.input_message)
                 .id("user-input")
                 .on_input(|t| ChatCommand::InputChange(t).into())

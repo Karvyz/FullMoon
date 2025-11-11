@@ -102,8 +102,8 @@ impl Chat {
         }
     }
 
-    pub fn view(&self) -> Element<'_, AppCommand> {
-        scrollable(self.create_column_view())
+    pub fn view(&self, theme: &Theme) -> Element<'_, AppCommand> {
+        scrollable(self.create_column_view(theme))
             .anchor_bottom()
             .height(Fill)
             .width(Fill)
@@ -111,7 +111,7 @@ impl Chat {
             .into()
     }
 
-    fn create_column_view(&self) -> Column<'_, usize, AppCommand> {
+    fn create_column_view(&self, theme: &Theme) -> Column<'_, usize, AppCommand> {
         let mut keyed_column = Column::new().spacing(10);
         let mut nb_childs = self.childs.len();
         let mut selected = self.selected;
@@ -139,9 +139,7 @@ impl Chat {
                                 "  ",
                                 span(Local::now().format("%B %d, %Y %H:%M").to_string())
                             ],
-                            text(current_node.message.text.clone())
-                                .width(Fill)
-                                .shaping(iced::widget::text::Shaping::Advanced)
+                            current_node.message.rich_text(theme)
                         ]
                         .spacing(4),
                         column![

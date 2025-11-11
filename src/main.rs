@@ -107,7 +107,7 @@ impl App {
         if let Some(settings_page) = &self.settings_page {
             pages = pages.push(settings_page.view())
         }
-        pages = pages.push(self.chat_page.view());
+        pages = pages.push(self.chat_page.view(&self.theme()));
 
         let mut stack = Stack::new();
         stack = stack.push(column![
