@@ -1,9 +1,11 @@
 use iced::{
-    Element,
+    Alignment, Border, Element, Font,
     Length::Fill,
-    Task,
-    widget::{column, text, text_input},
+    Task, Theme,
+    font::Weight,
+    widget::{column, container, text, text_input},
 };
+use iced_modern_theme::colors::colors;
 
 use crate::{AppCommand, settings::Settings};
 
@@ -33,18 +35,39 @@ impl SettingsPage {
     }
 
     pub fn view(&self) -> Element<'_, AppCommand> {
-        column![
-            text("API Key:"),
-            text_input("sk-************************************", &self.api_key)
-                .on_input(|t| SettingsCommand::ApiKeyChange(t).into())
-                .on_paste(|t| SettingsCommand::ApiKeyChange(t).into())
-                .width(Fill),
-            text("Model:"),
-            text_input("google/gemma-3-27b-it", &self.model)
-                .on_input(|t| SettingsCommand::ModelChange(t).into())
-                .on_paste(|t| SettingsCommand::ModelChange(t).into())
-                .width(Fill)
-        ]
+        container(
+            container(
+                column![
+                    text("API settings").font(Font {
+                        weight: Weight::Bold,
+                        ..Default::default()
+                    }),
+                    column![
+                        text("API Key:"),
+                        text_input("sk-************************************", &self.api_key)
+                            .on_input(|t| SettingsCommand::ApiKeyChange(t).into())
+                            .on_paste(|t| SettingsCommand::ApiKeyChange(t).into())
+                            .secure(true)
+                            .width(Fill)
+                    ]
+                    .spacing(5),
+                    column![
+                        text("Model:"),
+                        text_input("google/gemma-3-27b-it", &self.model)
+                            .on_input(|t| SettingsCommand::ModelChange(t).into())
+                            .on_paste(|t| SettingsCommand::ModelChange(t).into())
+                            .width(Fill)
+                    ]
+                    .spacing(5),
+                ]
+                .align_x(Alignment::Center)
+                .spacing(10)
+                .padding(10),
+            )
+            .style(Self::box_style)
+            .padding(10),
+        )
+        .padding(10)
         .width(Fill)
         .into()
     }
@@ -60,5 +83,11 @@ impl SettingsPage {
             Ok(_) => AppCommand::UpdateSettings(new_settings),
             Err(e) => AppCommand::Error(e.to_string()),
         })
+    }
+
+    fn box_style(theme: &Theme) -> iced::widget::container::Style {
+        container::rounded_box(theme)
+            .background(colors::fill::SECONDARY_DARK)
+            .border(Border::default().rounded(12))
     }
 }

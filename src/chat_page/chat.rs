@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::Local;
 use iced::{
     Border, Element, Font,
-    Length::{self, Fill},
+    Length::{self, Fill, Shrink},
     Theme,
     alignment::Horizontal,
     font::Weight,
@@ -11,6 +11,7 @@ use iced::{
         button, column, container, image, keyed::Column, rich_text, row, scrollable, span, text,
     },
 };
+use iced_modern_theme::colors::colors;
 use llm::chat::ChatMessage;
 
 use crate::{AppCommand, chat_page::MessageCommand, message::Message, persona::Persona};
@@ -102,8 +103,8 @@ impl Chat {
         }
     }
 
-    pub fn view(&self, theme: &Theme) -> Element<'_, AppCommand> {
-        scrollable(self.create_column_view(theme))
+    pub fn view(&self) -> Element<'_, AppCommand> {
+        scrollable(self.create_column_view())
             .anchor_bottom()
             .height(Fill)
             .width(Fill)
@@ -111,7 +112,7 @@ impl Chat {
             .into()
     }
 
-    fn create_column_view(&self, theme: &Theme) -> Column<'_, usize, AppCommand> {
+    fn create_column_view(&self) -> Column<'_, usize, AppCommand> {
         let mut keyed_column = Column::new().spacing(10);
         let mut nb_childs = self.childs.len();
         let mut selected = self.selected;
@@ -129,7 +130,8 @@ impl Chat {
                             image(current_node.message.get_avatar_uri())
                                 .width(100)
                                 .height(100)
-                        ),
+                        )
+                        .width(Shrink),
                         column![
                             rich_text![
                                 span(current_node.message.owner.name()).font(Font {
@@ -138,18 +140,20 @@ impl Chat {
                                 }),
                                 "  ",
                                 span(Local::now().format("%B %d, %Y %H:%M").to_string())
-                            ],
-                            current_node.message.rich_text(theme)
+                            ]
+                            .width(Shrink),
+                            current_node.message.rich_text()
                         ]
-                        .spacing(4),
+                        .spacing(4)
+                        .width(Length::FillPortion(6)),
                         column![
-                            text(format!("{}/{}", selected + 1, nb_childs))
-                                .align_x(Horizontal::Center),
-                            button(">").on_press(MessageCommand::Next(idx).into()),
+                            text(format!("{}/{}", selected + 1, nb_childs)),
+                            button(text(">")).on_press(MessageCommand::Next(idx).into()),
                             button("<").on_press(MessageCommand::Previous(idx).into())
                         ]
                         .spacing(2)
-                        .width(Length::Shrink)
+                        .align_x(Horizontal::Right)
+                        .width(Length::Fill)
                     ]
                     .padding(10)
                     .spacing(10),
@@ -167,9 +171,8 @@ impl Chat {
     }
 
     fn message_style(theme: &Theme) -> iced::widget::container::Style {
-        let palette = theme.extended_palette();
         container::rounded_box(theme)
-            .background(palette.background.weak.color)
+            .background(colors::fill::SECONDARY_DARK)
             .border(Border::default().rounded(12))
     }
 }

@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use crate::{AppCommand, persona::Persona};
 use iced::{
-    Color, Element, Font, Theme,
+    Color, Element, Font, Length,
     font::Style,
     widget::{span, text::Rich},
 };
+use iced_modern_theme::colors::colors;
 use llm::chat::ChatMessage;
 
 #[derive(Clone)]
@@ -59,7 +60,7 @@ impl Message {
         }
     }
 
-    pub fn rich_text(&self, theme: &Theme) -> Element<'_, AppCommand> {
+    pub fn rich_text(&self) -> Element<'_, AppCommand> {
         let mut spans = vec![];
         let mut current_type = StringType::Normal;
         let mut current_string = String::new();
@@ -97,7 +98,7 @@ impl Message {
                     }
                     spans.push(
                         span(current_string)
-                            .color(current_type.color(theme))
+                            .color(current_type.clone())
                             .font(current_type),
                     );
                     current_type = nt;
@@ -113,13 +114,14 @@ impl Message {
         }
         spans.push(
             span(current_string)
-                .color(current_type.color(theme))
+                .color(current_type.clone())
                 .font(current_type),
         );
-        Rich::with_spans(spans).into()
+        Rich::with_spans(spans).width(Length::Shrink).into()
     }
 }
 
+#[derive(Clone)]
 enum StringType {
     Normal,
     Strong,
@@ -143,14 +145,13 @@ impl From<StringType> for Font {
     }
 }
 
-impl StringType {
-    fn color(&self, theme: &Theme) -> Color {
-        let palette = theme.extended_palette();
-        match self {
-            StringType::Normal => palette.primary.weak.text,
-            StringType::Strong => palette.primary.weak.text,
-            StringType::Quote => palette.secondary.strong.text,
-            StringType::StrongQuote => palette.secondary.strong.text,
+impl From<StringType> for Color {
+    fn from(value: StringType) -> Self {
+        match value {
+            StringType::Normal => colors::text::PRIMARY_DARK,
+            StringType::Strong => colors::text::SECONDARY_DARK,
+            StringType::Quote => colors::system::ORANGE,
+            StringType::StrongQuote => colors::system::ORANGE,
         }
     }
 }

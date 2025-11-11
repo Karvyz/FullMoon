@@ -6,6 +6,7 @@ use iced::{
     Task, Theme,
     widget::{Row, Stack, button, column, container, row, text},
 };
+use iced_modern_theme::Modern;
 use settings_page::{SettingsCommand, SettingsPage};
 use tokio::time::sleep;
 
@@ -107,7 +108,7 @@ impl App {
         if let Some(settings_page) = &self.settings_page {
             pages = pages.push(settings_page.view())
         }
-        pages = pages.push(self.chat_page.view(&self.theme()));
+        pages = pages.push(self.chat_page.view());
 
         let mut stack = Stack::new();
         stack = stack.push(column![
@@ -135,7 +136,7 @@ impl App {
     }
 
     fn theme(&self) -> Theme {
-        Theme::TokyoNight
+        Modern::theme(true)
     }
 
     fn error_style(theme: &Theme) -> iced::widget::container::Style {

@@ -1,8 +1,11 @@
 use iced::{
-    Element,
+    Alignment, Border, Element, Font,
     Length::Fill,
+    Theme,
+    font::Weight,
     widget::{button, column, container, keyed, row, scrollable, text},
 };
+use iced_modern_theme::colors::colors;
 
 use crate::{
     AppCommand,
@@ -25,14 +28,25 @@ impl CharSelectorPage {
     }
 
     pub fn view(&self) -> Element<'_, AppCommand> {
-        let mut keyed_column = keyed::Column::new();
+        let mut keyed_column = keyed::Column::new().padding(10).spacing(10);
         for (idx, char) in self.chars.iter().enumerate() {
             keyed_column = keyed_column.push(
                 idx,
-                container(row![
-                    column![text(char.name()), text(char.description(None))],
-                    button("Select").on_press(AppCommand::SelectedChar(idx))
-                ]),
+                container(
+                    column![
+                        text(char.name()).font(Font {
+                            weight: Weight::Bold,
+                            ..Default::default()
+                        }),
+                        text(char.description(None)),
+                        button("Select").on_press(AppCommand::SelectedChar(idx))
+                    ]
+                    .width(Fill)
+                    .align_x(Alignment::Center)
+                    .spacing(10)
+                    .padding(10),
+                )
+                .style(Self::charbox_style),
             )
         }
         scrollable(keyed_column)
@@ -41,5 +55,11 @@ impl CharSelectorPage {
             .width(Fill)
             .spacing(10)
             .into()
+    }
+
+    fn charbox_style(theme: &Theme) -> iced::widget::container::Style {
+        container::rounded_box(theme)
+            .background(colors::fill::SECONDARY_DARK)
+            .border(Border::default().rounded(12))
     }
 }
