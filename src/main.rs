@@ -7,7 +7,7 @@ use iced::{
     widget::{Row, Stack, button, column, container, row, text},
 };
 use iced_modern_theme::Modern;
-use settings_page::{SettingsCommand, SettingsPage};
+use settings_page::{SettingsChange, SettingsPage};
 use tokio::time::sleep;
 
 use crate::{
@@ -45,7 +45,7 @@ enum AppCommand {
     SelectedChar(usize),
 
     ToggleSettings,
-    SettignsCommand(SettingsCommand),
+    SettignsCommand(SettingsChange),
     UpdateSettings(Settings),
 
     Error(String),
