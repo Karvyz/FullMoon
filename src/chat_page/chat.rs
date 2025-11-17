@@ -14,7 +14,9 @@ use iced::{
 use iced_modern_theme::colors::colors;
 use llm::chat::ChatMessage;
 
-use crate::{AppCommand, chat_page::MessageCommand, message::Message, persona::Persona};
+use crate::{
+    AppCommand, chat_page::MessageCommand, formater::Formater, message::Message, persona::Persona,
+};
 
 #[derive(Default)]
 pub struct Chat {
@@ -139,7 +141,7 @@ impl Chat {
                                 span(Local::now().format("%B %d, %Y %H:%M").to_string())
                             ]
                             .width(Shrink),
-                            current_node.message.rich_text()
+                            Formater::rich_text(&current_node.message.text)
                         ]
                         .spacing(4)
                         .width(Length::FillPortion(6)),
