@@ -3,13 +3,16 @@ use iced::{
     Length::Fill,
     Theme,
     font::Weight,
-    widget::{button, column, container, keyed, row, scrollable, text},
+    widget::{button, column, container, keyed, scrollable, text},
 };
 use iced_modern_theme::colors::colors;
 
 use crate::{
     AppCommand,
-    persona::{Persona, PersonaLoader},
+    persona::{
+        Persona,
+        loader::{PersonaLoader, Subdir},
+    },
 };
 
 pub struct CharSelectorPage {
@@ -19,7 +22,7 @@ pub struct CharSelectorPage {
 impl CharSelectorPage {
     pub fn new() -> Self {
         Self {
-            chars: PersonaLoader::load_from_cache("personas"),
+            chars: PersonaLoader::load_from_cache(Subdir::Chars),
         }
     }
 

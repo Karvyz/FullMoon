@@ -7,7 +7,10 @@ use crate::{
     AppCommand,
     chat_page::chat::Chat,
     message::Message,
-    persona::{Persona, PersonaLoader},
+    persona::{
+        Persona,
+        loader::{PersonaLoader, Subdir},
+    },
     settings::Settings,
 };
 
@@ -70,10 +73,8 @@ impl ChatPage {
     }
 
     pub fn try_load() -> Self {
-        let char = PersonaLoader::load_most_recent_from_cache("personas")
-            .unwrap_or(Persona::default_char());
-        let user =
-            PersonaLoader::load_most_recent_from_cache("user").unwrap_or(Persona::default_user());
+        let char = PersonaLoader::load_most_recent_from_cache(Subdir::Chars);
+        let user = PersonaLoader::load_most_recent_from_cache(Subdir::Users);
         ChatPage::new(char, user)
     }
 
