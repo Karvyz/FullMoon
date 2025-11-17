@@ -126,12 +126,9 @@ impl Chat {
                 idx,
                 container(
                     row![
-                        container(
-                            image(current_node.message.get_avatar_uri())
-                                .width(100)
-                                .height(100)
-                        )
-                        .width(Shrink),
+                        image(current_node.message.get_avatar_uri())
+                            .filter_method(image::FilterMethod::Linear)
+                            .width(Fill),
                         column![
                             rich_text![
                                 span(current_node.message.owner.name()).font(Font {
