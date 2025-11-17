@@ -61,16 +61,6 @@ impl Persona {
         }
     }
 
-    pub fn description(&self, partner_name: Option<&str>) -> String {
-        self.replace_names(
-            match &self.ptype {
-                PType::Basic(basic) => basic.description(),
-                PType::Card(card) => card.description(),
-            },
-            partner_name,
-        )
-    }
-
     pub fn system_prompt(&self, partner_name: Option<&str>) -> String {
         self.replace_names(
             match &self.ptype {

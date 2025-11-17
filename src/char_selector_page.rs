@@ -1,9 +1,9 @@
 use iced::{
-    Alignment, Border, Element, Font,
+    Border, Element, Font,
     Length::Fill,
     Theme,
     font::Weight,
-    widget::{button, column, container, keyed, scrollable, text},
+    widget::{button, column, container, image, keyed, row, scrollable, text},
 };
 use iced_modern_theme::colors::colors;
 
@@ -36,16 +36,23 @@ impl CharSelectorPage {
             keyed_column = keyed_column.push(
                 idx,
                 container(
-                    column![
-                        text(char.name()).font(Font {
-                            weight: Weight::Bold,
-                            ..Default::default()
-                        }),
-                        text(char.description(None)),
-                        button("Select").on_press(AppCommand::SelectedChar(idx))
+                    row![
+                        image(char.avatar_uri().unwrap_or("assets/char.png".to_string()))
+                            .filter_method(image::FilterMethod::Linear)
+                            .width(200)
+                            .height(200),
+                        column![
+                            text(char.name()).font(Font {
+                                weight: Weight::Bold,
+                                ..Default::default()
+                            }),
+                            button("Edit"),
+                            button("Select").on_press(AppCommand::SelectedChar(idx))
+                        ]
+                        .width(Fill)
+                        .spacing(10)
                     ]
                     .width(Fill)
-                    .align_x(Alignment::Center)
                     .spacing(10)
                     .padding(10),
                 )

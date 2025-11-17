@@ -31,10 +31,6 @@ impl Card {
         self.data.name.clone()
     }
 
-    pub fn description(&self) -> String {
-        self.data.description.clone()
-    }
-
     pub fn persona_prompt(&self) -> String {
         let data = self.data.clone();
         [
