@@ -14,6 +14,7 @@ pub struct Message {
     pub owner: Arc<Persona>,
     pub owner_type: OwnerType,
     pub text: String,
+    pub editing: Option<String>,
 }
 
 impl Message {
@@ -22,6 +23,7 @@ impl Message {
             owner: user,
             owner_type: OwnerType::User,
             text,
+            editing: None,
         }
     }
 
@@ -30,6 +32,7 @@ impl Message {
             owner: char,
             owner_type: OwnerType::Char,
             text: text.trim().to_string(),
+            editing: None,
         }
     }
 
@@ -51,6 +54,16 @@ impl Message {
                 OwnerType::User => "assets/user.png".to_string(),
                 OwnerType::Char => "assets/char.png".to_string(),
             },
+        }
+    }
+
+    pub fn toggle_edit(&mut self) {
+        match &self.editing {
+            Some(edit) => {
+                self.text = edit.clone();
+                self.editing = None;
+            }
+            None => self.editing = Some(self.text.clone()),
         }
     }
 }

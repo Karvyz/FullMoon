@@ -34,6 +34,9 @@ impl From<ChatCommand> for crate::AppCommand {
 pub enum MessageCommand {
     Next(usize),
     Previous(usize),
+    ToggleEdit(usize),
+    AbortEdit(usize),
+    EditChange(usize, String),
 }
 
 impl From<MessageCommand> for crate::AppCommand {
@@ -117,6 +120,9 @@ impl ChatPage {
                     }
                 }
                 MessageCommand::Previous(idx) => self.chat.previous(idx),
+                MessageCommand::ToggleEdit(idx) => self.chat.toggle_edit(idx),
+                MessageCommand::AbortEdit(idx) => self.chat.abort_edit(idx),
+                MessageCommand::EditChange(idx, text) => self.chat.set_edit(idx, text),
             },
         }
         Task::none()
