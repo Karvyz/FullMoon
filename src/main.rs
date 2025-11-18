@@ -23,6 +23,7 @@ mod message;
 mod persona;
 mod settings;
 mod settings_page;
+mod utils;
 
 pub fn main() -> iced::Result {
     iced::application("FullMoon", App::update, App::view)

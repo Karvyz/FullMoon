@@ -1,6 +1,12 @@
 use std::sync::Arc;
 
-use iced::{Element, Task, widget::text_input};
+use iced::{
+    Element, Task,
+    widget::{
+        TextEditor, button, row,
+        text_editor::{Action, Content},
+    },
+};
 use llm::chat::ChatMessage;
 
 use crate::{
@@ -18,7 +24,7 @@ mod chat;
 
 #[derive(Debug, Clone)]
 pub enum ChatCommand {
-    InputChange(String),
+    InputChange(Action),
     InputSubmit,
     StreamOk(String),
     MessageCommand(MessageCommand),
@@ -47,7 +53,7 @@ impl From<MessageCommand> for crate::AppCommand {
 
 pub struct ChatPage {
     chat: Chat,
-    input_message: String,
+    input_message: Content,
     char: Arc<Persona>,
     user: Arc<Persona>,
 }
@@ -55,7 +61,7 @@ pub struct ChatPage {
 impl Default for ChatPage {
     fn default() -> Self {
         ChatPage {
-            input_message: String::new(),
+            input_message: Content::new(),
             chat: Chat::default(),
             char: Arc::new(Persona::default_char()),
             user: Arc::new(Persona::default_user()),
@@ -68,7 +74,7 @@ impl ChatPage {
         let char = Arc::new(char);
         let user = Arc::new(user);
         ChatPage {
-            input_message: String::new(),
+            input_message: Content::new(),
             chat: Chat::with_messages(&char, &user),
             char,
             user,
@@ -93,10 +99,13 @@ impl ChatPage {
     pub fn view(&self) -> Element<'_, AppCommand> {
         iced::widget::column![
             self.chat.view(),
-            text_input("What needs to be done?", &self.input_message)
-                .id("user-input")
-                .on_input(|t| ChatCommand::InputChange(t).into())
-                .on_submit(ChatCommand::InputSubmit.into()),
+            row![
+                TextEditor::new(&self.input_message)
+                    .key_binding(crate::utils::binds::from_key_press)
+                    .on_action(|a| AppCommand::ChatCommand(ChatCommand::InputChange(a))),
+                button("Submit").on_press(AppCommand::ChatCommand(ChatCommand::InputSubmit))
+            ]
+            .spacing(10),
         ]
         .padding(20)
         .spacing(10)
@@ -105,7 +114,7 @@ impl ChatPage {
 
     pub fn update(&mut self, chat_command: ChatCommand, settings: &Settings) -> Task<AppCommand> {
         match chat_command {
-            ChatCommand::InputChange(input) => self.input_message = input,
+            ChatCommand::InputChange(action) => self.input_message.perform(action),
             ChatCommand::InputSubmit => {
                 self.create_message();
                 let chat_history = self.chat.get_chat_messages();
@@ -129,10 +138,11 @@ impl ChatPage {
     }
 
     fn create_message(&mut self) {
-        let text = self.input_message.clone();
+        let text = self.input_message.text();
         self.chat.push(Message::from_user(self.user.clone(), text));
-        self.input_message.clear();
+        self.input_message = Content::new();
     }
+
     fn get_response(&self, settings: &Settings, messages: Vec<ChatMessage>) -> Task<AppCommand> {
         let llm = settings.llm(&self.char, &self.user);
         println!("Getting response with chat history:");
