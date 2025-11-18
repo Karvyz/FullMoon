@@ -8,8 +8,10 @@ use iced::{
     alignment::Horizontal,
     font::Weight,
     widget::{
-        button, column, container, image, keyed::Column, rich_text, row, scrollable, span, text,
-        text_input,
+        TextEditor, button, column, container, image,
+        keyed::Column,
+        rich_text, row, scrollable, span, text,
+        text_editor::{Action, Content},
     },
 };
 use iced_modern_theme::colors::colors;
@@ -108,15 +110,19 @@ impl Chat {
 
     pub fn toggle_edit(&mut self, idx: usize) {
         match idx == 0 {
-            true => {
-                if self.childs[self.selected].message.editing.is_some() {
-                    let new_child = self.childs[self.selected].message.clone();
+            true => match &self.childs[self.selected].message.editing {
+                Some(content) => {
+                    let mut new_child = self.childs[self.selected].message.clone();
+                    new_child.text = content.text();
                     self.childs[self.selected].message.editing = None;
                     self.childs.push(MessageNode::new(new_child));
                     self.selected = self.childs.len() - 1;
                 }
-                self.childs[self.selected].message.toggle_edit()
-            }
+                None => {
+                    self.childs[self.selected].message.editing =
+                        Some(Content::with_text(&self.childs[self.selected].message.text))
+                }
+            },
             false => self.childs[self.selected].toggle_edit(idx - 1),
         }
     }
@@ -128,10 +134,13 @@ impl Chat {
         }
     }
 
-    pub fn set_edit(&mut self, idx: usize, text: String) {
+    pub fn perform_action(&mut self, idx: usize, action: Action) {
         match idx == 0 {
-            true => self.childs[self.selected].message.editing = Some(text),
-            false => self.childs[self.selected].set_edit(idx - 1, text),
+            true => match &mut self.childs[self.selected].message.editing {
+                Some(content) => content.perform(action),
+                None => eprintln!("Content not found"),
+            },
+            false => self.childs[self.selected].perform_action(idx - 1, action),
         }
     }
 
@@ -154,52 +163,51 @@ impl Chat {
         let mut current_node = &self.childs[selected];
         let mut idx = 0;
         loop {
-            keyed_column = keyed_column.push(
-                idx,
-                container(
-                    row![
-                        image(current_node.message.get_avatar_uri())
-                            .filter_method(image::FilterMethod::Linear)
-                            .width(Fill),
-                        column![
-                            rich_text![
-                                span(current_node.message.owner.name()).font(Font {
-                                    weight: Weight::Bold,
-                                    ..Font::default()
-                                }),
-                                "  ",
-                                span(Local::now().format("%B %d, %Y %H:%M").to_string())
-                            ]
-                            .width(Shrink),
-                            if let Some(edit) = &current_node.message.editing {
-                                let idx2 = idx;
-                                Element::from(
-                                    text_input("What needs to be done?", edit).on_input(move |t| {
-                                        MessageCommand::EditChange(idx2, t).into()
+            keyed_column =
+                keyed_column.push(
+                    idx,
+                    container(
+                        row![
+                            image(current_node.message.get_avatar_uri())
+                                .filter_method(image::FilterMethod::Linear)
+                                .width(Fill),
+                            column![
+                                rich_text![
+                                    span(current_node.message.owner.name()).font(Font {
+                                        weight: Weight::Bold,
+                                        ..Font::default()
                                     }),
-                                )
-                            } else {
-                                Element::from(Formater::rich_text(&current_node.message.text))
-                            },
+                                    "  ",
+                                    span(Local::now().format("%B %d, %Y %H:%M").to_string())
+                                ]
+                                .width(Shrink),
+                                if let Some(edit) = &current_node.message.editing {
+                                    let idx2 = idx;
+                                    Element::from(TextEditor::new(edit).on_action(move |a| {
+                                        MessageCommand::EditAction(idx2, a).into()
+                                    }))
+                                } else {
+                                    Element::from(Formater::rich_text(&current_node.message.text))
+                                },
+                            ]
+                            .spacing(4)
+                            .width(Length::FillPortion(6)),
+                            column![
+                                text(format!("{}/{}", selected + 1, nb_childs)),
+                                button(text(">")).on_press(MessageCommand::Next(idx).into()),
+                                button("<").on_press(MessageCommand::Previous(idx).into()),
+                                button("E").on_press(MessageCommand::ToggleEdit(idx).into()),
+                                button("A").on_press(MessageCommand::AbortEdit(idx).into())
+                            ]
+                            .spacing(2)
+                            .align_x(Horizontal::Right)
+                            .width(Length::Fill)
                         ]
-                        .spacing(4)
-                        .width(Length::FillPortion(6)),
-                        column![
-                            text(format!("{}/{}", selected + 1, nb_childs)),
-                            button(text(">")).on_press(MessageCommand::Next(idx).into()),
-                            button("<").on_press(MessageCommand::Previous(idx).into()),
-                            button("E").on_press(MessageCommand::ToggleEdit(idx).into()),
-                            button("A").on_press(MessageCommand::AbortEdit(idx).into())
-                        ]
-                        .spacing(2)
-                        .align_x(Horizontal::Right)
-                        .width(Length::Fill)
-                    ]
-                    .padding(10)
-                    .spacing(10),
-                )
-                .style(Self::message_style),
-            );
+                        .padding(10)
+                        .spacing(10),
+                    )
+                    .style(Self::message_style),
+                );
             idx += 1;
             if current_node.childs.is_empty() {
                 return keyed_column;
@@ -292,13 +300,13 @@ impl MessageNode {
     pub fn toggle_edit(&mut self, idx: usize) {
         match idx == 0 {
             true => {
-                if self.childs[self.selected].message.editing.is_some() {
-                    let new_child = self.childs[self.selected].message.clone();
+                if let Some(content) = &self.childs[self.selected].message.editing {
+                    let mut new_child = self.childs[self.selected].message.clone();
+                    new_child.text = content.text();
                     self.childs[self.selected].message.editing = None;
                     self.childs.push(MessageNode::new(new_child));
                     self.selected = self.childs.len() - 1;
                 }
-                self.childs[self.selected].message.toggle_edit()
             }
             false => self.childs[self.selected].toggle_edit(idx - 1),
         }
@@ -311,10 +319,13 @@ impl MessageNode {
         }
     }
 
-    pub fn set_edit(&mut self, idx: usize, text: String) {
+    pub fn perform_action(&mut self, idx: usize, action: Action) {
         match idx == 0 {
-            true => self.childs[self.selected].message.editing = Some(text),
-            false => self.childs[self.selected].set_edit(idx - 1, text),
+            true => match &mut self.childs[self.selected].message.editing {
+                Some(content) => content.perform(action),
+                None => eprintln!("Content not found"),
+            },
+            false => self.childs[self.selected].perform_action(idx - 1, action),
         }
     }
 }

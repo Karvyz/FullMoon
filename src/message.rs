@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::persona::Persona;
+use iced::widget::text_editor::Content;
 use llm::chat::ChatMessage;
 
 #[derive(Clone)]
@@ -9,12 +10,22 @@ pub enum OwnerType {
     Char,
 }
 
-#[derive(Clone)]
 pub struct Message {
     pub owner: Arc<Persona>,
     pub owner_type: OwnerType,
     pub text: String,
-    pub editing: Option<String>,
+    pub editing: Option<Content>,
+}
+
+impl Clone for Message {
+    fn clone(&self) -> Self {
+        Self {
+            owner: self.owner.clone(),
+            owner_type: self.owner_type.clone(),
+            text: self.text.clone(),
+            editing: None,
+        }
+    }
 }
 
 impl Message {
@@ -54,16 +65,6 @@ impl Message {
                 OwnerType::User => "assets/user.png".to_string(),
                 OwnerType::Char => "assets/char.png".to_string(),
             },
-        }
-    }
-
-    pub fn toggle_edit(&mut self) {
-        match &self.editing {
-            Some(edit) => {
-                self.text = edit.clone();
-                self.editing = None;
-            }
-            None => self.editing = Some(self.text.clone()),
         }
     }
 }

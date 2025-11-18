@@ -42,7 +42,7 @@ pub enum MessageCommand {
     Previous(usize),
     ToggleEdit(usize),
     AbortEdit(usize),
-    EditChange(usize, String),
+    EditAction(usize, Action),
 }
 
 impl From<MessageCommand> for crate::AppCommand {
@@ -102,8 +102,8 @@ impl ChatPage {
             row![
                 TextEditor::new(&self.input_message)
                     .key_binding(crate::utils::binds::from_key_press)
-                    .on_action(|a| AppCommand::ChatCommand(ChatCommand::InputChange(a))),
-                button("Submit").on_press(AppCommand::ChatCommand(ChatCommand::InputSubmit))
+                    .on_action(|a| ChatCommand::InputChange(a).into()),
+                button("Submit").on_press(ChatCommand::InputSubmit.into())
             ]
             .spacing(10),
         ]
@@ -131,7 +131,7 @@ impl ChatPage {
                 MessageCommand::Previous(idx) => self.chat.previous(idx),
                 MessageCommand::ToggleEdit(idx) => self.chat.toggle_edit(idx),
                 MessageCommand::AbortEdit(idx) => self.chat.abort_edit(idx),
-                MessageCommand::EditChange(idx, text) => self.chat.set_edit(idx, text),
+                MessageCommand::EditAction(idx, action) => self.chat.perform_action(idx, action),
             },
         }
         Task::none()
