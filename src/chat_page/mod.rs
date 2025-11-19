@@ -138,9 +138,11 @@ impl ChatPage {
     }
 
     fn create_message(&mut self) {
-        let text = self.input_message.text();
-        self.chat.push(Message::from_user(self.user.clone(), text));
-        self.input_message = Content::new();
+        let text = self.input_message.text().trim().to_string();
+        if !text.is_empty() {
+            self.chat.push(Message::from_user(self.user.clone(), text));
+            self.input_message = Content::new();
+        }
     }
 
     fn get_response(&self, settings: &Settings, messages: Vec<ChatMessage>) -> Task<AppCommand> {
