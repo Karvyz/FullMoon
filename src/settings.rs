@@ -24,6 +24,7 @@ pub enum SettingsChange {
     Temperature(f32),
     MaxTokens(u32),
     Reasoning(bool),
+    FontSize(f32),
 }
 
 impl From<SettingsChange> for crate::AppCommand {
@@ -39,6 +40,7 @@ pub struct Settings {
     temperature: f32,
     max_tokens: u32,
     reasoning: bool,
+    font_size: f32,
 }
 
 impl Default for Settings {
@@ -49,6 +51,7 @@ impl Default for Settings {
             temperature: 0.5,
             max_tokens: 1000,
             reasoning: false,
+            font_size: 16.0,
         }
     }
 }
@@ -120,55 +123,79 @@ impl Settings {
 
     pub fn view(&self) -> Element<'_, AppCommand> {
         container(
-            container(
-                column![
-                    text("API settings").font(Font {
-                        weight: Weight::Bold,
-                        ..Default::default()
-                    }),
+            column![
+                container(
                     column![
-                        text("API Key:"),
-                        text_input("sk-************************************", &self.api_key)
-                            .on_input(|t| SettingsChange::ApiKey(t).into())
-                            .on_paste(|t| SettingsChange::ApiKey(t).into())
-                            .secure(true)
+                        text("API settings").font(Font {
+                            weight: Weight::Bold,
+                            ..Default::default()
+                        }),
+                        column![
+                            text("API Key:"),
+                            text_input("sk-************************************", &self.api_key)
+                                .on_input(|t| SettingsChange::ApiKey(t).into())
+                                .on_paste(|t| SettingsChange::ApiKey(t).into())
+                                .secure(true)
+                                .width(Fill)
+                        ]
+                        .spacing(5),
+                        column![
+                            text("Model:"),
+                            text_input("google/gemma-3-27b-it", &self.model)
+                                .on_input(|t| SettingsChange::Model(t).into())
+                                .on_paste(|t| SettingsChange::Model(t).into())
+                                .width(Fill)
+                        ]
+                        .spacing(5),
+                        column![
+                            text(format! {"Temperature: {}", self.temperature}),
+                            slider(0.0..=1.0, self.temperature, |t| {
+                                SettingsChange::Temperature(t).into()
+                            })
+                            .step(0.01)
                             .width(Fill)
+                        ]
+                        .spacing(5),
+                        column![
+                            text(format! {"Max tokens: {}", self.max_tokens}),
+                            slider(0..=10000, self.max_tokens, |mt| {
+                                SettingsChange::MaxTokens(mt).into()
+                            })
+                            .width(Fill),
+                        ]
+                        .spacing(5),
+                        checkbox("Reasoning", self.reasoning)
+                            .on_toggle(|r| SettingsChange::Reasoning(r).into()),
                     ]
-                    .spacing(5),
-                    column![
-                        text("Model:"),
-                        text_input("google/gemma-3-27b-it", &self.model)
-                            .on_input(|t| SettingsChange::Model(t).into())
-                            .on_paste(|t| SettingsChange::Model(t).into())
-                            .width(Fill)
-                    ]
-                    .spacing(5),
-                    column![
-                        text(format! {"Temperature: {}", self.temperature}),
-                        slider(0.0..=1.0, self.temperature, |t| {
-                            SettingsChange::Temperature(t).into()
-                        })
-                        .step(0.01)
-                        .width(Fill)
-                    ]
-                    .spacing(5),
-                    column![
-                        text(format! {"Max tokens: {}", self.max_tokens}),
-                        slider(0..=10000, self.max_tokens, |mt| {
-                            SettingsChange::MaxTokens(mt).into()
-                        })
-                        .width(Fill),
-                    ]
-                    .spacing(5),
-                    checkbox("Reasoning", self.reasoning)
-                        .on_toggle(|r| SettingsChange::Reasoning(r).into()),
-                ]
-                .align_x(Alignment::Center)
-                .spacing(10)
+                    .align_x(Alignment::Center)
+                    .spacing(10)
+                    .padding(10),
+                )
+                .style(Self::box_style)
                 .padding(10),
-            )
-            .style(Self::box_style)
-            .padding(10),
+                container(
+                    column![
+                        text("App settings").font(Font {
+                            weight: Weight::Bold,
+                            ..Default::default()
+                        }),
+                        column![
+                            text(format! {"Font size: {}", self.font_size}),
+                            slider(4.0..=100.0, self.font_size, |fs| {
+                                SettingsChange::FontSize(fs).into()
+                            })
+                            .width(Fill),
+                        ]
+                        .spacing(5),
+                    ]
+                    .align_x(Alignment::Center)
+                    .spacing(10)
+                    .padding(10),
+                )
+                .style(Self::box_style)
+                .padding(10)
+            ]
+            .spacing(10),
         )
         .padding(10)
         .width(Fill)
@@ -182,20 +209,24 @@ impl Settings {
                 self.api_key = key
             }
             SettingsChange::Model(model) => {
-                trace!("Update model: {}", model);
+                trace!("Update model: {model}");
                 self.model = model
             }
             SettingsChange::Temperature(temperature) => {
-                trace!("Update temperature: {}", temperature);
+                trace!("Update temperature: {temperature}");
                 self.temperature = temperature
             }
             SettingsChange::MaxTokens(max_tokens) => {
-                trace!("Update max_tokens: {}", max_tokens);
+                trace!("Update max_tokens: {max_tokens}");
                 self.max_tokens = max_tokens
             }
             SettingsChange::Reasoning(reasoning) => {
-                trace!("Update reasoning {}", reasoning);
+                trace!("Update reasoning: {reasoning}");
                 self.reasoning = reasoning
+            }
+            SettingsChange::FontSize(font_size) => {
+                trace!("Update font size: {font_size}");
+                self.font_size = font_size
             }
         }
 
