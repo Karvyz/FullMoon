@@ -106,13 +106,13 @@ impl PersonaLoader {
     fn load(path: PathBuf) -> Result<Persona> {
         let data = fs::read_to_string(&path)?;
         if let Ok(card) = Card::load_from_json(&data) {
-            let persona = Persona::new(card.into(), None);
+            let persona = Persona::new(card, None);
             trace!("Loaded card {}", persona.name());
             return Ok(persona);
         }
 
         let basic = Basic::load_from_json(&data)?;
-        let persona = Persona::new(basic.into(), None);
+        let persona = Persona::new(basic, None);
         trace!("Loaded simple {}", persona.name());
         Ok(persona)
     }

@@ -1,6 +1,9 @@
+use std::rc::Rc;
+
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::persona::PType;
+use crate::persona::{CharData, Persona};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Basic {
@@ -8,30 +11,29 @@ pub struct Basic {
     description: String,
 }
 
-impl From<Basic> for PType {
-    fn from(basic: Basic) -> Self {
-        PType::Basic(basic)
+impl CharData for Basic {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn system_prompt(&self, partner_name: Option<&str>) -> String {
+        Persona::replace_names(&self.description, &self.name, partner_name)
+    }
+
+    fn greetings(&self, _: Option<&str>) -> Option<Vec<String>> {
+        None
     }
 }
 
 impl Basic {
-    pub fn new(name: &str, description: &str) -> PType {
-        Basic {
+    pub fn new(name: &str, description: &str) -> Rc<Self> {
+        Rc::new(Basic {
             name: name.to_string(),
             description: description.to_string(),
-        }
-        .into()
+        })
     }
 
-    pub fn load_from_json(data: &str) -> Result<Self, serde_json::Error> {
-        serde_json::from_str(data)
-    }
-
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    pub fn description(&self) -> String {
-        self.description.clone()
+    pub fn load_from_json(data: &str) -> Result<Rc<Self>> {
+        Ok(Rc::new(serde_json::from_str(data)?))
     }
 }

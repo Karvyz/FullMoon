@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::persona::PType;
+use crate::persona::{CharData, Persona};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Card {
@@ -16,40 +17,45 @@ pub struct Card {
     pub data: CharacterData,
 }
 
-impl From<Card> for PType {
-    fn from(card: Card) -> Self {
-        PType::Card(card)
+impl Card {
+    pub fn load_from_json(data: &str) -> Result<Rc<Self>> {
+        Ok(Rc::new(serde_json::from_str(data)?))
     }
 }
 
-impl Card {
-    pub fn load_from_json(data: &str) -> Result<Self, serde_json::Error> {
-        serde_json::from_str(data)
-    }
-
-    pub fn name(&self) -> String {
+impl CharData for Card {
+    fn name(&self) -> String {
         self.data.name.clone()
     }
 
-    pub fn persona_prompt(&self) -> String {
-        let data = self.data.clone();
-        [
-            data.system_prompt,
-            data.description,
-            data.scenario,
-            data.mes_example,
-        ]
-        .iter()
-        .filter(|s| !s.is_empty())
-        .map(|s| s.as_str())
-        .collect::<Vec<&str>>()
-        .join("/n")
-    }
-
-    pub fn greetings(&self) -> Vec<String> {
+    fn greetings(&self, partner_name: Option<&str>) -> Option<Vec<String>> {
         let mut greetings = vec![self.data.first_mes.clone()];
         greetings.append(&mut self.data.alternate_greetings.clone());
-        greetings
+        Some(
+            greetings
+                .iter()
+                .map(|g| Persona::replace_names(g, &self.data.name, partner_name))
+                .collect(),
+        )
+    }
+
+    fn system_prompt(&self, partner_name: Option<&str>) -> String {
+        let data = self.data.clone();
+        Persona::replace_names(
+            &[
+                data.system_prompt,
+                data.description,
+                data.scenario,
+                data.mes_example,
+            ]
+            .iter()
+            .filter(|s| !s.is_empty())
+            .map(|s| s.as_str())
+            .collect::<Vec<&str>>()
+            .join("/n"),
+            &self.data.name,
+            partner_name,
+        )
     }
 }
 
