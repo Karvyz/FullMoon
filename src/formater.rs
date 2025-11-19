@@ -6,7 +6,7 @@ use iced::{
 use iced_modern_theme::colors::colors;
 use regex::Regex;
 
-use crate::AppCommand;
+use crate::{AppCommand, settings::Settings};
 
 pub struct Formater {}
 
@@ -27,7 +27,7 @@ impl Formater {
         few_linebreaks.trim().to_string()
     }
 
-    pub fn rich_text(text: &str) -> Element<'_, AppCommand> {
+    pub fn rich_text<'a>(text: &'a str, settings: &'a Settings) -> Element<'a, AppCommand> {
         let mut spans = vec![];
         let mut current_type = StringType::Normal;
         let mut current_string = String::new();
@@ -65,6 +65,7 @@ impl Formater {
                     }
                     spans.push(
                         span(current_string)
+                            .size(settings.font_size())
                             .color(current_type.clone())
                             .font(current_type),
                     );
@@ -81,6 +82,7 @@ impl Formater {
         }
         spans.push(
             span(current_string)
+                .size(settings.font_size())
                 .color(current_type.clone())
                 .font(current_type),
         );
@@ -122,4 +124,3 @@ impl From<StringType> for Color {
         }
     }
 }
-

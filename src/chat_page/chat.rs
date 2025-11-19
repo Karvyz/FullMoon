@@ -20,6 +20,7 @@ use log::error;
 
 use crate::{
     AppCommand, chat_page::MessageCommand, formater::Formater, message::Message, persona::Persona,
+    settings::Settings,
 };
 
 #[derive(Default)]
@@ -156,8 +157,8 @@ impl Chat {
         }
     }
 
-    pub fn view(&self) -> Element<'_, AppCommand> {
-        scrollable(self.create_column_view())
+    pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
+        scrollable(self.create_column_view(settings))
             .anchor_bottom()
             .height(Fill)
             .width(Fill)
@@ -165,7 +166,7 @@ impl Chat {
             .into()
     }
 
-    fn create_column_view(&self) -> Column<'_, usize, AppCommand> {
+    fn create_column_view<'a>(&'a self, settings: &'a Settings) -> Column<'a, usize, AppCommand> {
         let mut keyed_column = Column::new().spacing(10);
         let mut nb_childs = self.childs.len();
         let mut selected = self.selected;
@@ -175,52 +176,59 @@ impl Chat {
         let mut current_node = &self.childs[selected];
         let mut idx = 0;
         loop {
-            keyed_column =
-                keyed_column.push(
-                    idx,
-                    container(
-                        row![
-                            image(current_node.message.get_avatar_uri())
-                                .filter_method(image::FilterMethod::Linear)
-                                .width(Fill),
-                            column![
-                                rich_text![
-                                    span(current_node.message.owner.name()).font(Font {
+            keyed_column = keyed_column.push(
+                idx,
+                container(
+                    row![
+                        image(current_node.message.get_avatar_uri())
+                            .filter_method(image::FilterMethod::Linear)
+                            .width(Fill),
+                        column![
+                            rich_text![
+                                span(current_node.message.owner.name())
+                                    .font(Font {
                                         weight: Weight::Bold,
                                         ..Font::default()
-                                    }),
-                                    "  ",
-                                    span(Local::now().format("%B %d, %Y %H:%M").to_string())
-                                ]
-                                .width(Shrink),
-                                if let Some(edit) = &current_node.message.editing {
-                                    let idx2 = idx;
-                                    Element::from(TextEditor::new(edit).on_action(move |a| {
-                                        MessageCommand::EditAction(idx2, a).into()
-                                    }))
-                                } else {
-                                    Element::from(Formater::rich_text(&current_node.message.text))
-                                },
+                                    })
+                                    .size(settings.font_size()),
+                                "  ",
+                                span(Local::now().format("%B %d, %Y %H:%M").to_string())
+                                    .size(settings.font_size())
                             ]
-                            .spacing(4)
-                            .width(Length::FillPortion(6)),
-                            column![
-                                text(format!("{}/{}", selected + 1, nb_childs)),
-                                button(text(">")).on_press(MessageCommand::Next(idx).into()),
-                                button("<").on_press(MessageCommand::Previous(idx).into()),
-                                button("E").on_press(MessageCommand::ToggleEdit(idx).into()),
-                                button("A").on_press(MessageCommand::AbortEdit(idx).into()),
-                                button("D").on_press(MessageCommand::Delete(idx).into())
-                            ]
-                            .spacing(2)
-                            .align_x(Horizontal::Right)
-                            .width(Length::Fill)
+                            .width(Shrink),
+                            if let Some(edit) = &current_node.message.editing {
+                                let idx2 = idx;
+                                Element::from(
+                                    TextEditor::new(edit).size(settings.font_size()).on_action(
+                                        move |a| MessageCommand::EditAction(idx2, a).into(),
+                                    ),
+                                )
+                            } else {
+                                Element::from(Formater::rich_text(
+                                    &current_node.message.text,
+                                    settings,
+                                ))
+                            },
                         ]
-                        .padding(10)
-                        .spacing(10),
-                    )
-                    .style(Self::message_style),
-                );
+                        .spacing(4)
+                        .width(Length::FillPortion(6)),
+                        column![
+                            text(format!("{}/{}", selected + 1, nb_childs)),
+                            button(text(">")).on_press(MessageCommand::Next(idx).into()),
+                            button("<").on_press(MessageCommand::Previous(idx).into()),
+                            button("E").on_press(MessageCommand::ToggleEdit(idx).into()),
+                            button("A").on_press(MessageCommand::AbortEdit(idx).into()),
+                            button("D").on_press(MessageCommand::Delete(idx).into())
+                        ]
+                        .spacing(2)
+                        .align_x(Horizontal::Right)
+                        .width(Length::Fill)
+                    ]
+                    .padding(10)
+                    .spacing(10),
+                )
+                .style(Self::message_style),
+            );
             idx += 1;
             if current_node.childs.is_empty() {
                 return keyed_column;

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use iced::{
     Element, Task,
     widget::{
-        TextEditor, button, row,
+        TextEditor, button, row, text,
         text_editor::{Action, Content},
     },
 };
@@ -97,14 +97,16 @@ impl ChatPage {
         self.chat = Chat::with_messages(&self.char, &self.user);
     }
 
-    pub fn view(&self) -> Element<'_, AppCommand> {
+    pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
         iced::widget::column![
-            self.chat.view(),
+            self.chat.view(settings),
             row![
                 TextEditor::new(&self.input_message)
+                    .size(settings.font_size())
                     .key_binding(crate::utils::binds::from_key_press)
                     .on_action(|a| ChatCommand::InputChange(a).into()),
-                button("Submit").on_press(ChatCommand::InputSubmit.into())
+                button(text("Submit").size(settings.font_size()))
+                    .on_press(ChatCommand::InputSubmit.into())
             ]
             .spacing(10),
         ]

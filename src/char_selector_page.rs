@@ -13,6 +13,7 @@ use crate::{
         Persona,
         loader::{PersonaLoader, Subdir},
     },
+    settings::Settings,
 };
 
 pub struct CharSelectorPage {
@@ -30,7 +31,7 @@ impl CharSelectorPage {
         self.chars[idx].clone()
     }
 
-    pub fn view(&self) -> Element<'_, AppCommand> {
+    pub fn view(&self, settings: &Settings) -> Element<'_, AppCommand> {
         let mut keyed_column = keyed::Column::new().padding(10).spacing(10);
         for (idx, char) in self.chars.iter().enumerate() {
             keyed_column = keyed_column.push(
@@ -42,12 +43,13 @@ impl CharSelectorPage {
                             .width(200)
                             .height(200),
                         column![
-                            text(char.name()).font(Font {
+                            text(char.name()).size(settings.font_size()).font(Font {
                                 weight: Weight::Bold,
                                 ..Default::default()
                             }),
-                            button("Edit"),
-                            button("Select").on_press(AppCommand::SelectedChar(idx))
+                            button(text("Edit").size(settings.font_size())),
+                            button(text("Select").size(settings.font_size()))
+                                .on_press(AppCommand::SelectedChar(idx))
                         ]
                         .width(Fill)
                         .spacing(10)

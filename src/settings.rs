@@ -57,6 +57,10 @@ impl Default for Settings {
 }
 
 impl Settings {
+    pub fn font_size(&self) -> f32 {
+        self.font_size
+    }
+
     pub fn llm(&self, char: &Arc<Persona>, user: &Arc<Persona>) -> Box<dyn LLMProvider> {
         LLMBuilder::new()
             .backend(LLMBackend::OpenRouter)
@@ -126,13 +130,14 @@ impl Settings {
             column![
                 container(
                     column![
-                        text("API settings").font(Font {
+                        text("API settings").size(self.font_size).font(Font {
                             weight: Weight::Bold,
                             ..Default::default()
                         }),
                         column![
-                            text("API Key:"),
+                            text("API Key:").size(self.font_size),
                             text_input("sk-************************************", &self.api_key)
+                                .size(self.font_size)
                                 .on_input(|t| SettingsChange::ApiKey(t).into())
                                 .on_paste(|t| SettingsChange::ApiKey(t).into())
                                 .secure(true)
@@ -140,15 +145,17 @@ impl Settings {
                         ]
                         .spacing(5),
                         column![
-                            text("Model:"),
+                            text("Model:").size(self.font_size),
                             text_input("google/gemma-3-27b-it", &self.model)
+                                .size(self.font_size)
                                 .on_input(|t| SettingsChange::Model(t).into())
                                 .on_paste(|t| SettingsChange::Model(t).into())
                                 .width(Fill)
                         ]
                         .spacing(5),
                         column![
-                            text(format! {"Temperature: {}", self.temperature}),
+                            text(format! {"Temperature: {}", self.temperature})
+                                .size(self.font_size),
                             slider(0.0..=1.0, self.temperature, |t| {
                                 SettingsChange::Temperature(t).into()
                             })
@@ -157,7 +164,7 @@ impl Settings {
                         ]
                         .spacing(5),
                         column![
-                            text(format! {"Max tokens: {}", self.max_tokens}),
+                            text(format! {"Max tokens: {}", self.max_tokens}).size(self.font_size),
                             slider(0..=10000, self.max_tokens, |mt| {
                                 SettingsChange::MaxTokens(mt).into()
                             })
@@ -165,6 +172,7 @@ impl Settings {
                         ]
                         .spacing(5),
                         checkbox("Reasoning", self.reasoning)
+                            .size(self.font_size)
                             .on_toggle(|r| SettingsChange::Reasoning(r).into()),
                     ]
                     .align_x(Alignment::Center)
@@ -175,12 +183,12 @@ impl Settings {
                 .padding(10),
                 container(
                     column![
-                        text("App settings").font(Font {
+                        text("App settings").size(self.font_size).font(Font {
                             weight: Weight::Bold,
                             ..Default::default()
                         }),
                         column![
-                            text(format! {"Font size: {}", self.font_size}),
+                            text(format! {"Font size: {}", self.font_size}).size(self.font_size),
                             slider(4.0..=100.0, self.font_size, |fs| {
                                 SettingsChange::FontSize(fs).into()
                             })

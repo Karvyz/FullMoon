@@ -119,21 +119,21 @@ impl App {
     fn view(&self) -> Element<'_, AppCommand> {
         let mut pages = Row::new().spacing(20);
         if let Some(char_selector_page) = &self.char_selector_page {
-            pages = pages.push(char_selector_page.view())
+            pages = pages.push(char_selector_page.view(&self.settings))
         }
         if self.show_settings {
             pages = pages.push(self.settings.view())
         }
-        pages = pages.push(self.chat_page.view());
+        pages = pages.push(self.chat_page.view(&self.settings));
 
         let mut stack = Stack::new();
         stack = stack.push(column![
             row![
-                button("User").width(Fill),
-                button("Characters")
+                button(text("User").size(self.settings.font_size())).width(Fill),
+                button(text("Characters").size(self.settings.font_size()))
                     .width(Fill)
                     .on_press(AppCommand::ToggleChars),
-                button("Settings")
+                button(text("Settings").size(self.settings.font_size()))
                     .width(Fill)
                     .on_press(AppCommand::ToggleSettings)
             ]
