@@ -1,10 +1,9 @@
 use dirs::config_dir;
 use iced::{
-    Alignment, Border, Element, Font,
+    Alignment, Border, Element,
     Length::Fill,
     Theme,
-    font::Weight,
-    widget::{checkbox, column, container, slider, text, text_input},
+    widget::{checkbox, column, container, slider, text_input},
 };
 use iced_modern_theme::colors::colors;
 use llm::{
@@ -15,7 +14,11 @@ use log::{error, trace};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-use crate::{AppCommand, persona::Persona};
+use crate::{
+    AppCommand,
+    persona::Persona,
+    utils::widgets::{bold_text, text},
+};
 
 #[derive(Debug, Clone)]
 pub enum SettingsChange {
@@ -69,7 +72,7 @@ impl Settings {
             .temperature(self.temperature)
             .max_tokens(self.max_tokens)
             .reasoning(self.reasoning)
-            .system(char.system_prompt(Some(&user.name())))
+            .system(char.system_prompt(Some(user.name())))
             .build()
             .expect("Failed to build LLM (Openrouter)")
     }
@@ -130,12 +133,9 @@ impl Settings {
             column![
                 container(
                     column![
-                        text("API settings").size(self.font_size).font(Font {
-                            weight: Weight::Bold,
-                            ..Default::default()
-                        }),
+                        bold_text("API settings", self),
                         column![
-                            text("API Key:").size(self.font_size),
+                            text("API Key:", self),
                             text_input("sk-************************************", &self.api_key)
                                 .size(self.font_size)
                                 .on_input(|t| SettingsChange::ApiKey(t).into())
@@ -145,7 +145,7 @@ impl Settings {
                         ]
                         .spacing(5),
                         column![
-                            text("Model:").size(self.font_size),
+                            text("Model:", self),
                             text_input("google/gemma-3-27b-it", &self.model)
                                 .size(self.font_size)
                                 .on_input(|t| SettingsChange::Model(t).into())
@@ -154,8 +154,7 @@ impl Settings {
                         ]
                         .spacing(5),
                         column![
-                            text(format! {"Temperature: {}", self.temperature})
-                                .size(self.font_size),
+                            text(format! {"Temperature: {}", self.temperature}, self),
                             slider(0.0..=1.0, self.temperature, |t| {
                                 SettingsChange::Temperature(t).into()
                             })
@@ -164,7 +163,7 @@ impl Settings {
                         ]
                         .spacing(5),
                         column![
-                            text(format! {"Max tokens: {}", self.max_tokens}).size(self.font_size),
+                            text(format! {"Max tokens: {}", self.max_tokens}, self),
                             slider(0..=10000, self.max_tokens, |mt| {
                                 SettingsChange::MaxTokens(mt).into()
                             })
@@ -183,12 +182,9 @@ impl Settings {
                 .padding(10),
                 container(
                     column![
-                        text("App settings").size(self.font_size).font(Font {
-                            weight: Weight::Bold,
-                            ..Default::default()
-                        }),
+                        bold_text("App settings", self),
                         column![
-                            text(format! {"Font size: {}", self.font_size}).size(self.font_size),
+                            text(format! {"Font size: {}", self.font_size}, self),
                             slider(4.0..=100.0, self.font_size, |fs| {
                                 SettingsChange::FontSize(fs).into()
                             })

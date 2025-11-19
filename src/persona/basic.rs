@@ -12,8 +12,8 @@ pub struct Basic {
 }
 
 impl CharData for Basic {
-    fn name(&self) -> String {
-        self.name.clone()
+    fn name(&self) -> &str {
+        &self.name
     }
 
     fn system_prompt(&self, partner_name: Option<&str>) -> String {

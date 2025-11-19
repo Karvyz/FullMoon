@@ -1,7 +1,7 @@
 use iced::{
     Element, Task,
     widget::{
-        TextEditor, button, row, text,
+        TextEditor, row,
         text_editor::{Action, Content},
     },
 };
@@ -16,6 +16,7 @@ use crate::{
         loader::{PersonaLoader, Subdir},
     },
     settings::Settings,
+    utils::widgets::button,
 };
 
 mod chat;
@@ -101,8 +102,7 @@ impl ChatPage {
                     .size(settings.font_size())
                     .key_binding(crate::utils::binds::from_key_press)
                     .on_action(|a| ChatCommand::InputChange(a).into()),
-                button(text("Submit").size(settings.font_size()))
-                    .on_press(ChatCommand::InputSubmit.into())
+                button("Submit", settings).on_press(ChatCommand::InputSubmit.into())
             ]
             .spacing(10),
         ]

@@ -6,9 +6,9 @@ use iced::{
     alignment::Horizontal,
     font::Weight,
     widget::{
-        TextEditor, button, column, container, image,
+        TextEditor, column, container, image,
         keyed::Column,
-        rich_text, row, scrollable, span, text,
+        rich_text, row, scrollable, span,
         text_editor::{Action, Content},
     },
 };
@@ -17,8 +17,13 @@ use llm::chat::ChatMessage;
 use log::error;
 
 use crate::{
-    AppCommand, chat_page::MessageCommand, formater::Formater, message::Message, persona::Persona,
+    AppCommand,
+    chat_page::MessageCommand,
+    formater::Formater,
+    message::Message,
+    persona::Persona,
     settings::Settings,
+    utils::widgets::{button, text},
 };
 
 #[derive(Default)]
@@ -30,7 +35,7 @@ pub struct Chat {
 impl Chat {
     pub fn with_messages(char: &Persona, user: &Persona) -> Self {
         Chat {
-            childs: match char.greetings(Some(&user.name())) {
+            childs: match char.greetings(Some(user.name())) {
                 Some(messages) => messages
                     .iter()
                     .map(|m| MessageNode::new(Message::from_char(char.clone(), m.clone())))
@@ -211,12 +216,12 @@ impl Chat {
                         .spacing(4)
                         .width(Length::FillPortion(6)),
                         column![
-                            text(format!("{}/{}", selected + 1, nb_childs)),
-                            button(text(">")).on_press(MessageCommand::Next(idx).into()),
-                            button("<").on_press(MessageCommand::Previous(idx).into()),
-                            button("E").on_press(MessageCommand::ToggleEdit(idx).into()),
-                            button("A").on_press(MessageCommand::AbortEdit(idx).into()),
-                            button("D").on_press(MessageCommand::Delete(idx).into())
+                            text(format!("{}/{}", selected + 1, nb_childs), settings),
+                            button(">", settings).on_press(MessageCommand::Next(idx).into()),
+                            button("<", settings).on_press(MessageCommand::Previous(idx).into()),
+                            button("E", settings).on_press(MessageCommand::ToggleEdit(idx).into()),
+                            button("A", settings).on_press(MessageCommand::AbortEdit(idx).into()),
+                            button("D", settings).on_press(MessageCommand::Delete(idx).into())
                         ]
                         .spacing(2)
                         .align_x(Horizontal::Right)

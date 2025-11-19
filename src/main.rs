@@ -4,7 +4,7 @@ use iced::{
     Border, Element,
     Length::{self, Fill},
     Task, Theme,
-    widget::{Row, Stack, button, column, container, row, text},
+    widget::{Row, Stack, column, container, row},
 };
 use iced_modern_theme::Modern;
 use log::trace;
@@ -14,6 +14,7 @@ use crate::{
     char_selector_page::CharSelectorPage,
     chat_page::{ChatCommand, ChatPage},
     settings::{Settings, SettingsChange},
+    utils::widgets::{button, text},
 };
 
 mod char_selector_page;
@@ -129,13 +130,13 @@ impl App {
         let mut stack = Stack::new();
         stack = stack.push(column![
             row![
-                button(text("User").size(self.settings.font_size())).width(Fill),
-                button(text("Characters").size(self.settings.font_size()))
-                    .width(Fill)
-                    .on_press(AppCommand::ToggleChars),
-                button(text("Settings").size(self.settings.font_size()))
-                    .width(Fill)
+                button("User", &self.settings).width(Fill),
+                button("Characters", &self.settings)
+                    .on_press(AppCommand::ToggleChars)
+                    .width(Fill),
+                button("Settings", &self.settings)
                     .on_press(AppCommand::ToggleSettings)
+                    .width(Fill)
             ]
             .padding(20)
             .spacing(20),
@@ -143,9 +144,13 @@ impl App {
         ]);
         if let Some(e) = &self.error {
             stack = stack.push(
-                container(container(text(e)).padding(20).style(Self::error_style))
-                    .center_x(Length::Fill)
-                    .padding(20),
+                container(
+                    container(text(e, &self.settings))
+                        .padding(20)
+                        .style(Self::error_style),
+                )
+                .center_x(Length::Fill)
+                .padding(20),
             );
         }
         stack.into()

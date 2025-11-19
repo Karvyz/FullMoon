@@ -24,8 +24,8 @@ impl Card {
 }
 
 impl CharData for Card {
-    fn name(&self) -> String {
-        self.data.name.clone()
+    fn name(&self) -> &str {
+        &self.data.name
     }
 
     fn greetings(&self, partner_name: Option<&str>) -> Option<Vec<String>> {

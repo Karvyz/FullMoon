@@ -7,7 +7,7 @@ mod card;
 pub mod loader;
 
 pub trait CharData {
-    fn name(&self) -> String;
+    fn name(&self) -> &str;
     fn system_prompt(&self, partner_name: Option<&str>) -> String;
     fn greetings(&self, partner_name: Option<&str>) -> Option<Vec<String>>;
 }
