@@ -25,6 +25,7 @@ mod chat;
 pub enum ChatCommand {
     InputChange(Action),
     InputSubmit,
+    GenerateNextMessage,
     StreamOk(String),
     MessageCommand(MessageCommand),
 }
@@ -115,7 +116,14 @@ impl ChatPage {
         match chat_command {
             ChatCommand::InputChange(action) => self.input_message.perform(action),
             ChatCommand::InputSubmit => {
-                self.create_message();
+                let text = self.input_message.text().trim().to_string();
+                if !text.is_empty() {
+                    self.chat.push(Message::from_user(self.user.clone(), text));
+                    self.input_message = Content::new();
+                }
+                return Task::done(ChatCommand::GenerateNextMessage.into());
+            }
+            ChatCommand::GenerateNextMessage => {
                 let chat_history = self.chat.get_chat_messages();
                 self.chat.push(Message::empty_from_char(self.char.clone()));
                 return self.get_response(settings, chat_history);
@@ -128,21 +136,17 @@ impl ChatPage {
                     }
                 }
                 MessageCommand::Previous(idx) => self.chat.previous(idx),
-                MessageCommand::ToggleEdit(idx) => self.chat.toggle_edit(idx),
+                MessageCommand::ToggleEdit(idx) => {
+                    if self.chat.toggle_edit(idx) {
+                        return Task::done(ChatCommand::GenerateNextMessage.into());
+                    }
+                }
                 MessageCommand::AbortEdit(idx) => self.chat.abort_edit(idx),
                 MessageCommand::EditAction(idx, action) => self.chat.perform_action(idx, action),
                 MessageCommand::Delete(idx) => self.chat.delete(idx),
             },
         }
         Task::none()
-    }
-
-    fn create_message(&mut self) {
-        let text = self.input_message.text().trim().to_string();
-        if !text.is_empty() {
-            self.chat.push(Message::from_user(self.user.clone(), text));
-            self.input_message = Content::new();
-        }
     }
 
     fn get_response(&self, settings: &Settings, messages: Vec<ChatMessage>) -> Task<AppCommand> {
