@@ -299,15 +299,19 @@ impl MessageNode {
 
     pub fn toggle_edit(&mut self, idx: usize) {
         match idx == 0 {
-            true => {
-                if let Some(content) = &self.childs[self.selected].message.editing {
+            true => match &self.childs[self.selected].message.editing {
+                Some(content) => {
                     let mut new_child = self.childs[self.selected].message.clone();
                     new_child.text = content.text();
                     self.childs[self.selected].message.editing = None;
                     self.childs.push(MessageNode::new(new_child));
                     self.selected = self.childs.len() - 1;
                 }
-            }
+                None => {
+                    self.childs[self.selected].message.editing =
+                        Some(Content::with_text(&self.childs[self.selected].message.text))
+                }
+            },
             false => self.childs[self.selected].toggle_edit(idx - 1),
         }
     }
