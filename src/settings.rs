@@ -1,4 +1,12 @@
 use dirs::config_dir;
+use iced::{
+    Alignment, Border, Element, Font,
+    Length::Fill,
+    Theme,
+    font::Weight,
+    widget::{checkbox, column, container, slider, text, text_input},
+};
+use iced_modern_theme::colors::colors;
 use llm::{
     LLMProvider,
     builder::{LLMBackend, LLMBuilder},
@@ -7,7 +15,22 @@ use log::{error, trace};
 use serde::{Deserialize, Serialize};
 use std::{fs, sync::Arc};
 
-use crate::persona::Persona;
+use crate::{AppCommand, persona::Persona};
+
+#[derive(Debug, Clone)]
+pub enum SettingsChange {
+    ApiKey(String),
+    Model(String),
+    Temperature(f32),
+    MaxTokens(u32),
+    Reasoning(bool),
+}
+
+impl From<SettingsChange> for crate::AppCommand {
+    fn from(settings_command: SettingsChange) -> Self {
+        crate::AppCommand::SettignsCommand(settings_command)
+    }
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Settings {
@@ -31,42 +54,6 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn new(
-        api_key: String,
-        model: String,
-        temperature: f32,
-        max_tokens: u32,
-        reasoning: bool,
-    ) -> Self {
-        Settings {
-            api_key,
-            model,
-            temperature,
-            max_tokens,
-            reasoning,
-        }
-    }
-
-    pub fn api_key(&self) -> String {
-        self.api_key.clone()
-    }
-
-    pub fn model(&self) -> String {
-        self.model.clone()
-    }
-
-    pub fn temperature(&self) -> f32 {
-        self.temperature
-    }
-
-    pub fn max_tokens(&self) -> u32 {
-        self.max_tokens
-    }
-
-    pub fn reasoning(&self) -> bool {
-        self.reasoning
-    }
-
     pub fn llm(&self, char: &Arc<Persona>, user: &Arc<Persona>) -> Box<dyn LLMProvider> {
         LLMBuilder::new()
             .backend(LLMBackend::OpenRouter)
@@ -129,5 +116,97 @@ impl Settings {
         fs::write(config_path, content)?;
 
         Ok(())
+    }
+
+    pub fn view(&self) -> Element<'_, AppCommand> {
+        container(
+            container(
+                column![
+                    text("API settings").font(Font {
+                        weight: Weight::Bold,
+                        ..Default::default()
+                    }),
+                    column![
+                        text("API Key:"),
+                        text_input("sk-************************************", &self.api_key)
+                            .on_input(|t| SettingsChange::ApiKey(t).into())
+                            .on_paste(|t| SettingsChange::ApiKey(t).into())
+                            .secure(true)
+                            .width(Fill)
+                    ]
+                    .spacing(5),
+                    column![
+                        text("Model:"),
+                        text_input("google/gemma-3-27b-it", &self.model)
+                            .on_input(|t| SettingsChange::Model(t).into())
+                            .on_paste(|t| SettingsChange::Model(t).into())
+                            .width(Fill)
+                    ]
+                    .spacing(5),
+                    column![
+                        text(format! {"Temperature: {}", self.temperature}),
+                        slider(0.0..=1.0, self.temperature, |t| {
+                            SettingsChange::Temperature(t).into()
+                        })
+                        .step(0.01)
+                        .width(Fill)
+                    ]
+                    .spacing(5),
+                    column![
+                        text(format! {"Max tokens: {}", self.max_tokens}),
+                        slider(0..=10000, self.max_tokens, |mt| {
+                            SettingsChange::MaxTokens(mt).into()
+                        })
+                        .width(Fill),
+                    ]
+                    .spacing(5),
+                    checkbox("Reasoning", self.reasoning)
+                        .on_toggle(|r| SettingsChange::Reasoning(r).into()),
+                ]
+                .align_x(Alignment::Center)
+                .spacing(10)
+                .padding(10),
+            )
+            .style(Self::box_style)
+            .padding(10),
+        )
+        .padding(10)
+        .width(Fill)
+        .into()
+    }
+
+    pub fn update(&mut self, settings_command: SettingsChange) {
+        match settings_command {
+            SettingsChange::ApiKey(key) => {
+                trace!("Update key");
+                self.api_key = key
+            }
+            SettingsChange::Model(model) => {
+                trace!("Update model: {}", model);
+                self.model = model
+            }
+            SettingsChange::Temperature(temperature) => {
+                trace!("Update temperature: {}", temperature);
+                self.temperature = temperature
+            }
+            SettingsChange::MaxTokens(max_tokens) => {
+                trace!("Update max_tokens: {}", max_tokens);
+                self.max_tokens = max_tokens
+            }
+            SettingsChange::Reasoning(reasoning) => {
+                trace!("Update reasoning {}", reasoning);
+                self.reasoning = reasoning
+            }
+        }
+
+        if let Err(e) = self.save() {
+            error!("{e}")
+        }
+    }
+
+    fn box_style(theme: &Theme) -> iced::widget::container::Style {
+        container::rounded_box(theme)
+            .background(colors::fill::SECONDARY_DARK)
+            .border(Border::default().rounded(12))
     }
 }

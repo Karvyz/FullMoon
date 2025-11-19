@@ -8,13 +8,12 @@ use iced::{
 };
 use iced_modern_theme::Modern;
 use log::trace;
-use settings_page::{SettingsChange, SettingsPage};
 use tokio::time::sleep;
 
 use crate::{
     char_selector_page::CharSelectorPage,
     chat_page::{ChatCommand, ChatPage},
-    settings::Settings,
+    settings::{Settings, SettingsChange},
 };
 
 mod char_selector_page;
@@ -23,7 +22,6 @@ mod formater;
 mod message;
 mod persona;
 mod settings;
-mod settings_page;
 mod utils;
 
 pub fn main() -> iced::Result {
@@ -41,8 +39,8 @@ pub fn main() -> iced::Result {
 struct App {
     chat_page: ChatPage,
     char_selector_page: Option<CharSelectorPage>,
-    settings_page: Option<SettingsPage>,
     settings: Settings,
+    show_settings: bool,
     error: Option<String>,
 }
 
@@ -55,7 +53,6 @@ enum AppCommand {
 
     ToggleSettings,
     SettignsCommand(SettingsChange),
-    UpdateSettings(Settings),
 
     Error(String),
     DismissError,
@@ -66,8 +63,8 @@ impl App {
         App {
             chat_page: ChatPage::try_load(),
             char_selector_page: None,
-            settings_page: None,
             settings: Settings::load(),
+            show_settings: false,
             error: None,
         }
     }
@@ -98,24 +95,18 @@ impl App {
             }
 
             AppCommand::ToggleSettings => {
-                self.settings_page = match self.settings_page {
-                    None => {
+                self.show_settings = match self.show_settings {
+                    false => {
                         trace!("Opening settings page");
-                        Some(SettingsPage::new(&self.settings))
+                        true
                     }
-                    Some(_) => {
+                    true => {
                         trace!("Closing settings page");
-                        None
+                        false
                     }
                 };
             }
-            AppCommand::SettignsCommand(settings_command) => {
-                if let Some(settings_page) = &mut self.settings_page {
-                    return settings_page.update(settings_command);
-                }
-            }
-            AppCommand::UpdateSettings(settings) => self.settings = settings,
-
+            AppCommand::SettignsCommand(settings_command) => self.settings.update(settings_command),
             AppCommand::Error(e) => {
                 self.error = Some(e);
                 return Task::perform(sleep(Duration::from_secs(3)), |_| AppCommand::DismissError);
@@ -130,8 +121,8 @@ impl App {
         if let Some(char_selector_page) = &self.char_selector_page {
             pages = pages.push(char_selector_page.view())
         }
-        if let Some(settings_page) = &self.settings_page {
-            pages = pages.push(settings_page.view())
+        if self.show_settings {
+            pages = pages.push(self.settings.view())
         }
         pages = pages.push(self.chat_page.view());
 
