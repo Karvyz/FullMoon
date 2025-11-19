@@ -144,6 +144,18 @@ impl Chat {
         }
     }
 
+    pub fn delete(&mut self, idx: usize) {
+        match idx == 0 {
+            true => {
+                self.childs.remove(self.selected);
+                if self.selected != 0 {
+                    self.selected -= 1;
+                }
+            }
+            false => self.childs[self.selected].delete(idx - 1),
+        }
+    }
+
     pub fn view(&self) -> Element<'_, AppCommand> {
         scrollable(self.create_column_view())
             .anchor_bottom()
@@ -197,7 +209,8 @@ impl Chat {
                                 button(text(">")).on_press(MessageCommand::Next(idx).into()),
                                 button("<").on_press(MessageCommand::Previous(idx).into()),
                                 button("E").on_press(MessageCommand::ToggleEdit(idx).into()),
-                                button("A").on_press(MessageCommand::AbortEdit(idx).into())
+                                button("A").on_press(MessageCommand::AbortEdit(idx).into()),
+                                button("D").on_press(MessageCommand::Delete(idx).into())
                             ]
                             .spacing(2)
                             .align_x(Horizontal::Right)
@@ -330,6 +343,18 @@ impl MessageNode {
                 None => error!("Content not found"),
             },
             false => self.childs[self.selected].perform_action(idx - 1, action),
+        }
+    }
+
+    pub fn delete(&mut self, idx: usize) {
+        match idx == 0 {
+            true => {
+                self.childs.remove(self.selected);
+                if self.selected != 0 {
+                    self.selected -= 1;
+                }
+            }
+            false => self.childs[self.selected].delete(idx - 1),
         }
     }
 }

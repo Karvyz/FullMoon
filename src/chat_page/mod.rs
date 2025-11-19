@@ -43,6 +43,7 @@ pub enum MessageCommand {
     ToggleEdit(usize),
     AbortEdit(usize),
     EditAction(usize, Action),
+    Delete(usize),
 }
 
 impl From<MessageCommand> for crate::AppCommand {
@@ -132,6 +133,7 @@ impl ChatPage {
                 MessageCommand::ToggleEdit(idx) => self.chat.toggle_edit(idx),
                 MessageCommand::AbortEdit(idx) => self.chat.abort_edit(idx),
                 MessageCommand::EditAction(idx, action) => self.chat.perform_action(idx, action),
+                MessageCommand::Delete(idx) => self.chat.delete(idx),
             },
         }
         Task::none()
