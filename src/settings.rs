@@ -3,6 +3,7 @@ use llm::{
     LLMProvider,
     builder::{LLMBackend, LLMBuilder},
 };
+use log::{error, trace};
 use serde::{Deserialize, Serialize};
 use std::{fs, sync::Arc};
 
@@ -80,7 +81,7 @@ impl Settings {
     }
 
     pub fn load() -> Self {
-        println!("Loading config started");
+        trace!("Loading config started");
         let path = config_dir()
             .map(|mut path| {
                 path.push("fullmoon");
@@ -93,23 +94,23 @@ impl Settings {
             true => match fs::read_to_string(&path) {
                 Ok(content) => match serde_json::from_str(&content) {
                     Ok(settings) => {
-                        println!("Loading config finished");
+                        trace!("Loading config finished");
                         settings
                     }
                     Err(e) => {
-                        eprintln!("Error parsing config: {}", e);
+                        error!("Error parsing config: {}", e);
                         Self::default()
                     }
                 },
                 Err(e) => {
-                    eprintln!("Error reading config: {}", e);
+                    error!("Error reading config: {}", e);
                     Self::default()
                 }
             },
             false => {
                 let default = Self::default();
-                println!("Config not found. Writing default");
-                default.save().unwrap_or_else(|e| eprintln!("{e}"));
+                error!("Config not found. Writing default");
+                default.save().unwrap_or_else(|e| error!("{e}"));
                 default
             }
         }

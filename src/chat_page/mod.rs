@@ -145,11 +145,6 @@ impl ChatPage {
 
     fn get_response(&self, settings: &Settings, messages: Vec<ChatMessage>) -> Task<AppCommand> {
         let llm = settings.llm(&self.char, &self.user);
-        println!("Getting response with chat history:");
-        for mes in &messages {
-            println!("{:?}", mes);
-        }
-        println!();
         Task::perform(async move { llm.chat_stream(&messages).await }, |res| res).and_then(|res| {
             Task::run(res, |chunk| match chunk {
                 Ok(text) => ChatCommand::StreamOk(text).into(),

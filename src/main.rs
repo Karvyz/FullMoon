@@ -7,6 +7,7 @@ use iced::{
     widget::{Row, Stack, button, column, container, row, text},
 };
 use iced_modern_theme::Modern;
+use log::trace;
 use settings_page::{SettingsChange, SettingsPage};
 use tokio::time::sleep;
 
@@ -26,6 +27,12 @@ mod settings_page;
 mod utils;
 
 pub fn main() -> iced::Result {
+    env_logger::Builder::new()
+        .filter_level(log::LevelFilter::Off) // Default: everything off
+        .filter_module("fullmoon", log::LevelFilter::Trace)
+        .filter_module("llm", log::LevelFilter::Trace)
+        .init();
+
     iced::application("FullMoon", App::update, App::view)
         .theme(App::theme)
         .run_with(|| (App::new(), iced::Task::none()))
@@ -72,19 +79,34 @@ impl App {
             }
             AppCommand::ToggleChars => {
                 self.char_selector_page = match self.char_selector_page {
-                    None => Some(CharSelectorPage::new()),
-                    Some(_) => None,
+                    None => {
+                        trace!("Opening Char selector page");
+                        Some(CharSelectorPage::new())
+                    }
+                    Some(_) => {
+                        trace!("Closing Char selector page");
+                        None
+                    }
                 };
             }
             AppCommand::SelectedChar(char_idx) => {
                 if let Some(csp) = &self.char_selector_page {
-                    self.chat_page.set_char(csp.get(char_idx))
+                    let char = csp.get(char_idx);
+                    trace!("Selected {}", char.name());
+                    self.chat_page.set_char(char)
                 }
             }
+
             AppCommand::ToggleSettings => {
                 self.settings_page = match self.settings_page {
-                    None => Some(SettingsPage::new(&self.settings)),
-                    Some(_) => None,
+                    None => {
+                        trace!("Opening settings page");
+                        Some(SettingsPage::new(&self.settings))
+                    }
+                    Some(_) => {
+                        trace!("Closing settings page");
+                        None
+                    }
                 };
             }
             AppCommand::SettignsCommand(settings_command) => {
@@ -93,6 +115,7 @@ impl App {
                 }
             }
             AppCommand::UpdateSettings(settings) => self.settings = settings,
+
             AppCommand::Error(e) => {
                 self.error = Some(e);
                 return Task::perform(sleep(Duration::from_secs(3)), |_| AppCommand::DismissError);

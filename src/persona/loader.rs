@@ -1,4 +1,5 @@
 use anyhow::{Result, anyhow};
+use log::{error, trace};
 use std::{fs, path::PathBuf, time::SystemTime};
 
 use crate::persona::{Persona, basic::Basic, card::Card};
@@ -25,7 +26,7 @@ impl PersonaLoader {
         match Self::try_load_dir(dir) {
             Ok(personas) => personas,
             Err(e) => {
-                eprintln!("{e}");
+                error!("{e}");
                 vec![subdir.default_persona()]
             }
         }
@@ -36,10 +37,10 @@ impl PersonaLoader {
         match Self::most_recent_dir(&cache_path) {
             Ok(most_recent) => match Self::try_load_subdir(most_recent) {
                 Ok(persona) => return persona,
-                Err(e) => eprintln!("{e}"),
+                Err(e) => error!("{e}"),
             },
 
-            Err(e) => eprintln!("{e}"),
+            Err(e) => error!("{e}"),
         }
         subdir.default_persona()
     }
@@ -106,13 +107,13 @@ impl PersonaLoader {
         let data = fs::read_to_string(&path)?;
         if let Ok(card) = Card::load_from_json(&data) {
             let persona = Persona::new(card.into(), None);
-            println!("Loaded card {}", persona.name());
+            trace!("Loaded card {}", persona.name());
             return Ok(persona);
         }
 
         let basic = Basic::load_from_json(&data)?;
         let persona = Persona::new(basic.into(), None);
-        println!("Loaded simple {}", persona.name());
+        trace!("Loaded simple {}", persona.name());
         Ok(persona)
     }
 

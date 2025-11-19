@@ -6,6 +6,7 @@ use iced::{
     widget::{checkbox, column, container, slider, text, text_input},
 };
 use iced_modern_theme::colors::colors;
+use log::trace;
 
 use crate::{AppCommand, settings::Settings};
 
@@ -102,11 +103,26 @@ impl SettingsPage {
 
     pub fn update(&mut self, settings_command: SettingsChange) -> Task<AppCommand> {
         match settings_command {
-            SettingsChange::ApiKey(key) => self.api_key = key,
-            SettingsChange::Model(model) => self.model = model,
-            SettingsChange::Temperature(temperature) => self.temperature = temperature,
-            SettingsChange::MaxTokens(max_tokens) => self.max_tokens = max_tokens,
-            SettingsChange::Reasoning(reasoning) => self.reasoning = reasoning,
+            SettingsChange::ApiKey(key) => {
+                trace!("Update key");
+                self.api_key = key
+            }
+            SettingsChange::Model(model) => {
+                trace!("Update model: {}", model);
+                self.model = model
+            }
+            SettingsChange::Temperature(temperature) => {
+                trace!("Update temperature: {}", temperature);
+                self.temperature = temperature
+            }
+            SettingsChange::MaxTokens(max_tokens) => {
+                trace!("Update max_tokens: {}", max_tokens);
+                self.max_tokens = max_tokens
+            }
+            SettingsChange::Reasoning(reasoning) => {
+                trace!("Update reasoning {}", reasoning);
+                self.reasoning = reasoning
+            }
         }
 
         let new_settings = Settings::new(

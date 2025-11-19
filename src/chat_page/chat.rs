@@ -16,6 +16,7 @@ use iced::{
 };
 use iced_modern_theme::colors::colors;
 use llm::chat::ChatMessage;
+use log::error;
 
 use crate::{
     AppCommand, chat_page::MessageCommand, formater::Formater, message::Message, persona::Persona,
@@ -68,13 +69,12 @@ impl Chat {
         if !self.childs.is_empty() && idx > 0 {
             self.childs[self.selected].get_current_chat_until(&mut chat, idx - 1);
         }
-        println!("Chat history len : {}", chat.len());
         chat.iter().map(|msg| msg.to_chat_message()).collect()
     }
 
     pub fn append_last_message(&mut self, text: &str) {
         match self.childs.is_empty() {
-            true => eprintln!("Error: Trying to append to non existing message"),
+            true => error!("Error: Trying to append to non existing message"),
             false => self.childs[self.selected].append_last_message(text),
         }
     }
@@ -138,7 +138,7 @@ impl Chat {
         match idx == 0 {
             true => match &mut self.childs[self.selected].message.editing {
                 Some(content) => content.perform(action),
-                None => eprintln!("Content not found"),
+                None => error!("Content not found"),
             },
             false => self.childs[self.selected].perform_action(idx - 1, action),
         }
@@ -327,7 +327,7 @@ impl MessageNode {
         match idx == 0 {
             true => match &mut self.childs[self.selected].message.editing {
                 Some(content) => content.perform(action),
-                None => eprintln!("Content not found"),
+                None => error!("Content not found"),
             },
             false => self.childs[self.selected].perform_action(idx - 1, action),
         }
