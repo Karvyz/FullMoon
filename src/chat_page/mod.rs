@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use iced::{
     Element, Task,
     widget::{
@@ -55,8 +53,8 @@ impl From<MessageCommand> for crate::AppCommand {
 pub struct ChatPage {
     chat: Chat,
     input_message: Content,
-    char: Arc<Persona>,
-    user: Arc<Persona>,
+    char: Persona,
+    user: Persona,
 }
 
 impl Default for ChatPage {
@@ -64,16 +62,14 @@ impl Default for ChatPage {
         ChatPage {
             input_message: Content::new(),
             chat: Chat::default(),
-            char: Arc::new(Persona::default_char()),
-            user: Arc::new(Persona::default_user()),
+            char: Persona::default_char(),
+            user: Persona::default_user(),
         }
     }
 }
 
 impl ChatPage {
     pub fn new(char: Persona, user: Persona) -> Self {
-        let char = Arc::new(char);
-        let user = Arc::new(user);
         ChatPage {
             input_message: Content::new(),
             chat: Chat::with_messages(&char, &user),
@@ -89,7 +85,7 @@ impl ChatPage {
     }
 
     pub fn set_char(&mut self, char: Persona) {
-        self.char = Arc::new(char);
+        self.char = char;
         self.new_chat();
     }
 

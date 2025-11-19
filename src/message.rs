@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::persona::Persona;
 use iced::widget::text_editor::Content;
 use llm::chat::ChatMessage;
@@ -11,7 +9,7 @@ pub enum OwnerType {
 }
 
 pub struct Message {
-    pub owner: Arc<Persona>,
+    pub owner: Persona,
     pub owner_type: OwnerType,
     pub text: String,
     pub editing: Option<Content>,
@@ -29,7 +27,7 @@ impl Clone for Message {
 }
 
 impl Message {
-    pub fn from_user(user: Arc<Persona>, text: String) -> Self {
+    pub fn from_user(user: Persona, text: String) -> Self {
         Message {
             owner: user,
             owner_type: OwnerType::User,
@@ -38,7 +36,7 @@ impl Message {
         }
     }
 
-    pub fn from_char(char: Arc<Persona>, text: String) -> Self {
+    pub fn from_char(char: Persona, text: String) -> Self {
         Message {
             owner: char,
             owner_type: OwnerType::Char,
@@ -47,7 +45,7 @@ impl Message {
         }
     }
 
-    pub fn empty_from_char(char: Arc<Persona>) -> Self {
+    pub fn empty_from_char(char: Persona) -> Self {
         Self::from_char(char, String::new())
     }
 

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use chrono::Local;
 use iced::{
     Border, Element, Font,
@@ -30,7 +28,7 @@ pub struct Chat {
 }
 
 impl Chat {
-    pub fn with_messages(char: &Arc<Persona>, user: &Arc<Persona>) -> Self {
+    pub fn with_messages(char: &Persona, user: &Persona) -> Self {
         Chat {
             childs: match char.greetings(Some(&user.name())) {
                 Some(messages) => messages
@@ -91,7 +89,7 @@ impl Chat {
         }
     }
 
-    pub fn next(&mut self, idx: usize, char: Arc<Persona>) -> bool {
+    pub fn next(&mut self, idx: usize, char: Persona) -> bool {
         match idx == 0 {
             true => match self.selected < self.childs.len() - 1 {
                 true => {
@@ -300,7 +298,7 @@ impl MessageNode {
         }
     }
 
-    fn next(&mut self, idx: usize, char: Arc<Persona>) -> bool {
+    fn next(&mut self, idx: usize, char: Persona) -> bool {
         match idx == 0 {
             true => match self.selected < self.childs.len() - 1 {
                 true => {

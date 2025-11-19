@@ -13,7 +13,7 @@ use llm::{
 };
 use log::{error, trace};
 use serde::{Deserialize, Serialize};
-use std::{fs, sync::Arc};
+use std::fs;
 
 use crate::{AppCommand, persona::Persona};
 
@@ -61,7 +61,7 @@ impl Settings {
         self.font_size
     }
 
-    pub fn llm(&self, char: &Arc<Persona>, user: &Arc<Persona>) -> Box<dyn LLMProvider> {
+    pub fn llm(&self, char: &Persona, user: &Persona) -> Box<dyn LLMProvider> {
         LLMBuilder::new()
             .backend(LLMBackend::OpenRouter)
             .api_key(self.api_key.clone())
