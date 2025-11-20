@@ -1,9 +1,8 @@
 use chrono::Local;
 use iced::{
-    Border, Element, Font,
+    Alignment, Border, Element, Font,
     Length::{self, Fill, Shrink},
     Theme,
-    alignment::Horizontal,
     font::Weight,
     widget::{
         TextEditor, column, container, image,
@@ -189,18 +188,31 @@ impl Chat {
                             .filter_method(image::FilterMethod::Linear)
                             .width(Fill),
                         column![
-                            rich_text![
-                                span(current_node.message.owner.name())
-                                    .font(Font {
-                                        weight: Weight::Bold,
-                                        ..Font::default()
-                                    })
-                                    .size(settings.font_size()),
-                                "  ",
-                                span(Local::now().format("%B %d, %Y %H:%M").to_string())
-                                    .size(settings.font_size())
+                            row![
+                                rich_text![
+                                    span(current_node.message.owner.name())
+                                        .font(Font {
+                                            weight: Weight::Bold,
+                                            ..Font::default()
+                                        })
+                                        .size(settings.font_size()),
+                                    "  ",
+                                    span(Local::now().format("%B %d, %Y %H:%M").to_string())
+                                        .size(settings.font_size())
+                                ]
+                                .width(Fill),
+                                text(format!("{}/{}", selected + 1, nb_childs), settings),
+                                button("<", settings)
+                                    .on_press(MessageCommand::Previous(idx).into()),
+                                button(">", settings).on_press(MessageCommand::Next(idx).into()),
+                                button("E", settings)
+                                    .on_press(MessageCommand::ToggleEdit(idx).into()),
+                                button("A", settings)
+                                    .on_press(MessageCommand::AbortEdit(idx).into()),
+                                button("D", settings).on_press(MessageCommand::Delete(idx).into())
                             ]
-                            .width(Shrink),
+                            .align_y(Alignment::Center)
+                            .spacing(2),
                             if let Some(edit) = &current_node.message.editing {
                                 let idx2 = idx;
                                 Element::from(
@@ -217,17 +229,6 @@ impl Chat {
                         ]
                         .spacing(4)
                         .width(Length::FillPortion(6)),
-                        column![
-                            text(format!("{}/{}", selected + 1, nb_childs), settings),
-                            button(">", settings).on_press(MessageCommand::Next(idx).into()),
-                            button("<", settings).on_press(MessageCommand::Previous(idx).into()),
-                            button("E", settings).on_press(MessageCommand::ToggleEdit(idx).into()),
-                            button("A", settings).on_press(MessageCommand::AbortEdit(idx).into()),
-                            button("D", settings).on_press(MessageCommand::Delete(idx).into())
-                        ]
-                        .spacing(2)
-                        .align_x(Horizontal::Right)
-                        .width(Length::Fill)
                     ]
                     .padding(10)
                     .spacing(10),

@@ -1,5 +1,5 @@
 use iced::{
-    Element, Task,
+    Alignment, Element, Task,
     widget::{
         TextEditor, row,
         text_editor::{Action, Content},
@@ -16,7 +16,7 @@ use crate::{
         loader::{PersonaLoader, Subdir},
     },
     settings::Settings,
-    utils::widgets::button,
+    utils::widgets::{bold_text, button},
 };
 
 mod chat;
@@ -97,6 +97,10 @@ impl ChatPage {
 
     pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
         iced::widget::column![
+            bold_text(
+                format!("{}'s chat with {}", self.user.name(), self.char.name()),
+                settings
+            ),
             self.chat.view(settings),
             row![
                 TextEditor::new(&self.input_message)
@@ -107,6 +111,7 @@ impl ChatPage {
             ]
             .spacing(10),
         ]
+        .align_x(Alignment::Center)
         .padding(20)
         .spacing(10)
         .into()
