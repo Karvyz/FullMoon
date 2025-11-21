@@ -1,11 +1,11 @@
 use chrono::Local;
 use iced::{
     Alignment, Border, Element, Font,
-    Length::{self, Fill, Shrink},
+    Length::{self, Fill},
     Theme,
     font::Weight,
     widget::{
-        TextEditor, column, container, image,
+        TextEditor, column, container,
         keyed::Column,
         rich_text, row, scrollable, span,
         text_editor::{Action, Content},
@@ -184,9 +184,8 @@ impl Chat {
                 idx,
                 container(
                     row![
-                        image(current_node.message.get_avatar_uri())
-                            .filter_method(image::FilterMethod::Linear)
-                            .width(Fill),
+                        // image(current_node.message.get_avatar_uri())
+                        current_node.message.owner.image().width(Fill),
                         column![
                             row![
                                 rich_text![

@@ -55,14 +55,4 @@ impl Message {
             OwnerType::Char => ChatMessage::assistant().content(&self.text).build(),
         }
     }
-
-    pub fn get_avatar_uri(&self) -> String {
-        match self.owner.avatar_uri() {
-            Some(uri) => uri,
-            None => match self.owner_type {
-                OwnerType::User => "assets/user.png".to_string(),
-                OwnerType::Char => "assets/char.png".to_string(),
-            },
-        }
-    }
 }

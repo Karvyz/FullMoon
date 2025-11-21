@@ -1,4 +1,6 @@
-use std::{fmt::Debug, ops::Deref, path::PathBuf, rc::Rc};
+use std::{fmt::Debug, ops::Deref, rc::Rc};
+
+use iced::widget::{Image, image::Handle};
 
 use crate::persona::basic::Basic;
 
@@ -14,15 +16,14 @@ pub trait CharData {
 
 #[derive(Clone)]
 pub struct Persona {
-    avatar_uri: Option<String>,
     data: Rc<dyn CharData>,
+    image: Handle,
 }
 
 impl Debug for Persona {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Persona")
-            .field("avatar_uri", &self.avatar_uri)
-            // .field("char_data", &self.char_data)
+            .field("char", &self.data.name())
             .finish()
     }
 }
@@ -36,21 +37,21 @@ impl Deref for Persona {
 }
 
 impl Persona {
-    pub fn new(data: Rc<dyn CharData>, avatar_uri: Option<String>) -> Self {
-        Persona { data, avatar_uri }
+    pub fn new(data: Rc<dyn CharData>, image: Handle) -> Self {
+        Persona { data, image }
     }
 
     pub fn default_user() -> Self {
         Self {
             data: Basic::new("User", ""),
-            avatar_uri: None,
+            image: Handle::from_path("assets/user.png"),
         }
     }
 
     pub fn default_char() -> Self {
         Self {
             data: Basic::new("Luna", "You are Luna, an helpfull AI assistant."),
-            avatar_uri: None,
+            image: Handle::from_path("assets/char.png"),
         }
     }
 
@@ -69,12 +70,8 @@ impl Persona {
     //     Ok(())
     // }
 
-    pub fn avatar_uri(&self) -> Option<String> {
-        self.avatar_uri.clone()
-    }
-
-    pub fn set_avatar_uri(&mut self, path: PathBuf) {
-        self.avatar_uri = Some(path.to_str().unwrap().to_string())
+    pub fn image(&self) -> Image {
+        iced::widget::image(&self.image)
     }
 
     pub fn replace_names(s: &str, self_name: &str, partner_name: Option<&str>) -> String {

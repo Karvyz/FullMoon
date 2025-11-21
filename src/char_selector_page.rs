@@ -2,7 +2,7 @@ use iced::{
     Border, Element,
     Length::Fill,
     Theme,
-    widget::{column, container, image, keyed, row, scrollable},
+    widget::{column, container, keyed, row, scrollable},
 };
 use iced_modern_theme::colors::colors;
 
@@ -38,10 +38,7 @@ impl CharSelectorPage {
                 idx,
                 container(
                     row![
-                        image(char.avatar_uri().unwrap_or("assets/char.png".to_string()))
-                            .filter_method(image::FilterMethod::Linear)
-                            .width(200)
-                            .height(200),
+                        char.image().height(200),
                         column![
                             bold_text(char.name(), settings),
                             button("Edit", settings),
