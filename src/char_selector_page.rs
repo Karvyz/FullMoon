@@ -22,13 +22,23 @@ pub struct CharSelectorPage {
 
 impl CharSelectorPage {
     pub fn new() -> Self {
-        Self {
+        let mut csp = Self {
             chars: PersonaLoader::load_from_cache(Subdir::Chars),
-        }
+        };
+        csp.reorder();
+        csp
     }
 
-    pub fn get(&self, idx: usize) -> Persona {
-        self.chars[idx].clone()
+    pub fn get(&mut self, idx: usize) -> Persona {
+        self.chars[idx].set_modified_time();
+        let p = self.chars[idx].clone();
+        self.reorder();
+        p
+    }
+
+    fn reorder(&mut self) {
+        self.chars.sort_by_key(|p| p.modified_time());
+        self.chars.reverse();
     }
 
     pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {

@@ -7,7 +7,12 @@ use iced::{
     widget::image::Handle,
 };
 use log::{error, trace};
-use std::{fs, path::PathBuf, rc::Rc, time::SystemTime};
+use std::{
+    fs::{self, File},
+    path::PathBuf,
+    rc::Rc,
+    time::SystemTime,
+};
 
 use crate::persona::{CharData, Persona, basic::Basic, card::Card};
 
@@ -90,9 +95,11 @@ impl PersonaLoader {
     }
 
     fn try_load_subdir(dir: PathBuf, default_handle: &Handle) -> Result<Persona> {
+        let modified_time = Self::modified_time(&dir);
+
         let mut image = Err(anyhow!("Persona not found"));
         let mut persona = Err(anyhow!("Persona not found"));
-        for entry in (fs::read_dir(dir)?).flatten() {
+        for entry in (fs::read_dir(&dir)?).flatten() {
             let path = entry.path();
             if path.is_file()
                 && let Some(ext) = path.extension()
@@ -113,6 +120,8 @@ impl PersonaLoader {
                     Ok(image) => image,
                     Err(_) => default_handle.clone(),
                 },
+                modified_time,
+                dir,
             )),
             Err(_) => Err(anyhow!("Persona not found")),
         }
@@ -185,5 +194,10 @@ impl PersonaLoader {
             return modified_time;
         }
         SystemTime::UNIX_EPOCH
+    }
+
+    pub fn touch(path: &PathBuf) -> std::io::Result<()> {
+        let dest = File::open(path)?;
+        dest.set_modified(SystemTime::now())
     }
 }

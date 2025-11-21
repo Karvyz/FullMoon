@@ -88,7 +88,7 @@ impl App {
                 };
             }
             AppCommand::SelectedChar(char_idx) => {
-                if let Some(csp) = &self.char_selector_page {
+                if let Some(csp) = &mut self.char_selector_page {
                     let char = csp.get(char_idx);
                     trace!("Selected {}", char.name());
                     self.chat_page.set_char(char)

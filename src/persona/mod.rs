@@ -1,8 +1,9 @@
-use std::{fmt::Debug, ops::Deref, rc::Rc};
+use std::{fmt::Debug, ops::Deref, path::PathBuf, rc::Rc, time::SystemTime};
 
 use iced::widget::{Image, image::Handle};
+use log::error;
 
-use crate::persona::basic::Basic;
+use crate::persona::{basic::Basic, loader::PersonaLoader};
 
 mod basic;
 mod card;
@@ -18,6 +19,8 @@ pub trait CharData {
 pub struct Persona {
     data: Rc<dyn CharData>,
     image: Handle,
+    modified_time: SystemTime,
+    path: PathBuf,
 }
 
 impl Debug for Persona {
@@ -37,14 +40,26 @@ impl Deref for Persona {
 }
 
 impl Persona {
-    pub fn new(data: Rc<dyn CharData>, image: Handle) -> Self {
-        Persona { data, image }
+    pub fn new(
+        data: Rc<dyn CharData>,
+        image: Handle,
+        modified_time: SystemTime,
+        path: PathBuf,
+    ) -> Self {
+        Persona {
+            data,
+            image,
+            modified_time,
+            path,
+        }
     }
 
     pub fn default_user() -> Self {
         Self {
             data: Basic::new("User", ""),
             image: Handle::from_path("assets/user.png"),
+            modified_time: SystemTime::now(),
+            path: PathBuf::new(),
         }
     }
 
@@ -52,6 +67,10 @@ impl Persona {
         Self {
             data: Basic::new("Luna", "You are Luna, an helpfull AI assistant."),
             image: Handle::from_path("assets/char.png"),
+
+            modified_time: SystemTime::now(),
+
+            path: PathBuf::new(),
         }
     }
 
@@ -72,6 +91,17 @@ impl Persona {
 
     pub fn image(&self) -> Image {
         iced::widget::image(&self.image)
+    }
+
+    pub fn modified_time(&self) -> SystemTime {
+        self.modified_time
+    }
+
+    pub fn set_modified_time(&mut self) {
+        self.modified_time = SystemTime::now();
+        if let Err(e) = PersonaLoader::touch(&self.path) {
+            error!("{e}");
+        }
     }
 
     pub fn replace_names(s: &str, self_name: &str, partner_name: Option<&str>) -> String {
