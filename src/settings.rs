@@ -1,4 +1,5 @@
-use dirs::config_dir;
+use std::ops::Deref;
+
 use iced::{
     Alignment, Border, Element,
     Length::Fill,
@@ -6,17 +7,10 @@ use iced::{
     widget::{checkbox, column, container, slider, text_input},
 };
 use iced_modern_theme::colors::colors;
-use llm::{
-    LLMProvider,
-    builder::{LLMBackend, LLMBuilder},
-};
 use log::{error, trace};
-use serde::{Deserialize, Serialize};
-use std::fs;
 
 use crate::{
     AppCommand,
-    persona::Persona,
     utils::widgets::{bold_text, text},
 };
 
@@ -36,26 +30,17 @@ impl From<SettingsChange> for crate::AppCommand {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone)]
 pub struct Settings {
-    api_key: String,
-    model: String,
-    temperature: f32,
-    max_tokens: u32,
-    reasoning: bool,
     font_size: f32,
+    base: libmoon::settings::Settings,
 }
 
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            api_key: "sk-TESTKEY".to_string(),
-            model: "google/gemma-3-27b-it".to_string(),
-            temperature: 0.5,
-            max_tokens: 1000,
-            reasoning: false,
-            font_size: 16.0,
-        }
+impl Deref for Settings {
+    type Target = libmoon::settings::Settings;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
     }
 }
 
@@ -64,68 +49,11 @@ impl Settings {
         self.font_size
     }
 
-    pub fn llm(&self, char: &Persona, user: &Persona) -> Box<dyn LLMProvider> {
-        LLMBuilder::new()
-            .backend(LLMBackend::OpenRouter)
-            .api_key(self.api_key.clone())
-            .model(self.model.clone())
-            .temperature(self.temperature)
-            .max_tokens(self.max_tokens)
-            .reasoning(self.reasoning)
-            .system(char.system_prompt(Some(user.name())))
-            .build()
-            .expect("Failed to build LLM (Openrouter)")
-    }
-
     pub fn load() -> Self {
-        trace!("Loading config started");
-        let path = config_dir()
-            .map(|mut path| {
-                path.push("fullmoon");
-                path.push("settings.json");
-                path
-            })
-            .unwrap();
-
-        match path.exists() {
-            true => match fs::read_to_string(&path) {
-                Ok(content) => match serde_json::from_str(&content) {
-                    Ok(settings) => {
-                        trace!("Loading config finished");
-                        settings
-                    }
-                    Err(e) => {
-                        error!("Error parsing config: {}", e);
-                        Self::default()
-                    }
-                },
-                Err(e) => {
-                    error!("Error reading config: {}", e);
-                    Self::default()
-                }
-            },
-            false => {
-                let default = Self::default();
-                error!("Config not found. Writing default");
-                default.save().unwrap_or_else(|e| error!("{e}"));
-                default
-            }
+        Settings {
+            font_size: 20.,
+            base: libmoon::settings::Settings::load(),
         }
-    }
-
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let config_dir = config_dir().ok_or("Unable to find config directory")?;
-
-        let fullmoon_dir = config_dir.join("fullmoon");
-        if !fullmoon_dir.exists() {
-            fs::create_dir_all(&fullmoon_dir)?;
-        }
-
-        let config_path = fullmoon_dir.join("settings.json");
-        let content = serde_json::to_string_pretty(self)?;
-        fs::write(config_path, content)?;
-
-        Ok(())
     }
 
     pub fn view(&self) -> Element<'_, AppCommand> {
@@ -210,23 +138,23 @@ impl Settings {
         match settings_command {
             SettingsChange::ApiKey(key) => {
                 trace!("Update key");
-                self.api_key = key
+                self.base.api_key = key
             }
             SettingsChange::Model(model) => {
                 trace!("Update model: {model}");
-                self.model = model
+                self.base.model = model
             }
             SettingsChange::Temperature(temperature) => {
                 trace!("Update temperature: {temperature}");
-                self.temperature = temperature
+                self.base.temperature = temperature
             }
             SettingsChange::MaxTokens(max_tokens) => {
                 trace!("Update max_tokens: {max_tokens}");
-                self.max_tokens = max_tokens
+                self.base.max_tokens = max_tokens
             }
             SettingsChange::Reasoning(reasoning) => {
                 trace!("Update reasoning: {reasoning}");
-                self.reasoning = reasoning
+                self.base.reasoning = reasoning
             }
             SettingsChange::FontSize(font_size) => {
                 trace!("Update font size: {font_size}");

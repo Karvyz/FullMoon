@@ -27,13 +27,13 @@ impl Formater {
         few_linebreaks.trim().to_string()
     }
 
-    pub fn rich_text<'a>(text: &'a str, settings: &'a Settings) -> Element<'a, AppCommand> {
+    pub fn rich_text(text: String, settings: &Settings) -> Element<'_, AppCommand> {
         let mut spans = vec![];
         let mut current_type = StringType::Normal;
         let mut current_string = String::new();
         let mut push_char_anyway = false;
         let mut push_before = false;
-        for char in Self::clean(text).chars() {
+        for char in Self::clean(&text).chars() {
             let nt = match char {
                 '*' => match current_type {
                     StringType::Normal => Some(StringType::Strong),

@@ -5,13 +5,10 @@ use iced::{
     widget::{column, container, keyed, row, scrollable},
 };
 use iced_modern_theme::colors::colors;
+use libmoon::persona::{Persona, loader};
 
 use crate::{
     AppCommand,
-    persona::{
-        Persona,
-        loader::{PersonaLoader, Subdir},
-    },
     settings::Settings,
     utils::widgets::{bold_text, button},
 };
@@ -23,7 +20,7 @@ pub struct CharSelectorPage {
 impl CharSelectorPage {
     pub fn new() -> Self {
         let mut csp = Self {
-            chars: PersonaLoader::load_from_cache(Subdir::Chars),
+            chars: loader::load_chars(),
         };
         csp.reorder();
         csp
@@ -48,7 +45,7 @@ impl CharSelectorPage {
                 idx,
                 container(
                     row![
-                        char.image().height(200),
+                        // char.image().height(200),
                         column![
                             bold_text(char.name(), settings),
                             button("Edit", settings),

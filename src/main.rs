@@ -20,8 +20,6 @@ use crate::{
 mod char_selector_page;
 mod chat_page;
 mod formater;
-mod message;
-mod persona;
 mod settings;
 mod utils;
 

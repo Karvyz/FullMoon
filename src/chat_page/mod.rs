@@ -1,32 +1,27 @@
+use crate::{
+    AppCommand,
+    formater::Formater,
+    settings::Settings,
+    utils::widgets::{bold_text, button, text},
+};
+use chrono::Local;
 use iced::{
-    Alignment, Element, Task,
+    Alignment, Border, Element, Font,
+    Length::{self, Fill},
+    Task, Theme,
+    font::Weight,
     widget::{
-        TextEditor, row,
+        TextEditor, column, container, keyed, rich_text, row, scrollable, span,
         text_editor::{Action, Content},
     },
 };
-use llm::chat::ChatMessage;
-
-use crate::{
-    AppCommand,
-    chat_page::chat::Chat,
-    message::Message,
-    persona::{
-        Persona,
-        loader::{PersonaLoader, Subdir},
-    },
-    settings::Settings,
-    utils::widgets::{bold_text, button},
-};
-
-mod chat;
+use iced_modern_theme::colors::colors;
+use libmoon::{chat::Chat, persona::Persona};
 
 #[derive(Debug, Clone)]
 pub enum ChatCommand {
     InputChange(Action),
     InputSubmit,
-    GenerateNextMessage,
-    StreamOk(String),
     MessageCommand(MessageCommand),
 }
 
@@ -55,53 +50,42 @@ impl From<MessageCommand> for crate::AppCommand {
 pub struct ChatPage {
     chat: Chat,
     input_message: Content,
-    char: Persona,
-    user: Persona,
 }
 
 impl Default for ChatPage {
     fn default() -> Self {
         ChatPage {
             input_message: Content::new(),
-            chat: Chat::default(),
-            char: Persona::default_char(),
-            user: Persona::default_user(),
+            chat: Chat::load(),
         }
     }
 }
 
 impl ChatPage {
-    pub fn new(char: Persona, user: Persona) -> Self {
+    pub fn new(char: Persona, user: Persona, settings: libmoon::settings::Settings) -> Self {
         ChatPage {
             input_message: Content::new(),
-            chat: Chat::with_messages(&char, &user),
-            char,
-            user,
+            chat: Chat::with_personas(user, char, settings),
         }
     }
 
     pub fn try_load() -> Self {
-        let char = PersonaLoader::load_most_recent_from_cache(Subdir::Chars);
-        let user = PersonaLoader::load_most_recent_from_cache(Subdir::Users);
-        ChatPage::new(char, user)
+        ChatPage {
+            input_message: Content::new(),
+            chat: Chat::load(),
+        }
     }
 
     pub fn set_char(&mut self, char: Persona) {
-        self.char = char;
-        self.new_chat();
-    }
-
-    pub fn new_chat(&mut self) {
-        self.chat = Chat::with_messages(&self.char, &self.user);
+        let user = self.chat.user();
+        let settings = self.chat.settings().clone();
+        self.chat = Chat::with_personas(user, char, settings);
     }
 
     pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
         iced::widget::column![
-            bold_text(
-                format!("{}'s chat with {}", self.user.name(), self.char.name()),
-                settings
-            ),
-            self.chat.view(settings),
+            bold_text(self.chat.title(), settings),
+            self.chat_view(settings),
             row![
                 TextEditor::new(&self.input_message)
                     .size(settings.font_size())
@@ -117,50 +101,108 @@ impl ChatPage {
         .into()
     }
 
+    pub fn chat_view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
+        scrollable(self.create_column_view(settings))
+            .anchor_bottom()
+            .height(Fill)
+            .width(Fill)
+            .spacing(10)
+            .into()
+    }
+
+    fn create_column_view<'a>(
+        &'a self,
+        settings: &'a Settings,
+    ) -> keyed::Column<'a, usize, AppCommand> {
+        let mut keyed_column = keyed::Column::new().spacing(10);
+        let messages = self.chat.get_history();
+        let structure = self.chat.get_history_structure();
+
+        for (idx, message) in messages.into_iter().enumerate() {
+            keyed_column = keyed_column.push(
+                idx,
+                container(
+                    row![
+                        // image(current_node.message.get_avatar_uri())
+                        // current_node.message.owner.image().width(Fill),
+                        column![
+                            row![
+                                rich_text![
+                                    span(self.chat.owner_name(&message))
+                                        .font(Font {
+                                            weight: Weight::Bold,
+                                            ..Font::default()
+                                        })
+                                        .size(settings.font_size()),
+                                    "  ",
+                                    span(Local::now().format("%B %d, %Y %H:%M").to_string())
+                                        .size(settings.font_size())
+                                ]
+                                .width(Fill),
+                                text(
+                                    format!("{}/{}", structure[idx].0, structure[idx].1),
+                                    settings
+                                ),
+                                button("<", settings)
+                                    .on_press(MessageCommand::Previous(idx).into()),
+                                button(">", settings).on_press(MessageCommand::Next(idx).into()),
+                                button("E", settings)
+                                    .on_press(MessageCommand::ToggleEdit(idx).into()),
+                                button("A", settings)
+                                    .on_press(MessageCommand::AbortEdit(idx).into()),
+                                button("D", settings).on_press(MessageCommand::Delete(idx).into())
+                            ]
+                            .align_y(Alignment::Center)
+                            .spacing(2),
+                            Element::from(Formater::rich_text(message.text.clone(), settings)),
+                            // if let Some(edit) = &current_node.message.editing {
+                            //     let idx2 = idx;
+                            //     Element::from(
+                            //         TextEditor::new(edit).size(settings.font_size()).on_action(
+                            //             move |a| MessageCommand::EditAction(idx2, a).into(),
+                            //         ),
+                            //     )
+                            // } else {
+                            //     Element::from(Formater::rich_text(&message.text, settings))
+                            // },
+                        ]
+                        .spacing(4)
+                        .width(Length::FillPortion(6)),
+                    ]
+                    .padding(10)
+                    .spacing(10),
+                )
+                .style(Self::message_style),
+            );
+        }
+        keyed_column
+    }
+
+    fn message_style(theme: &Theme) -> iced::widget::container::Style {
+        container::rounded_box(theme)
+            .background(colors::fill::SECONDARY_DARK)
+            .border(Border::default().rounded(12))
+    }
+
     pub fn update(&mut self, chat_command: ChatCommand, settings: &Settings) -> Task<AppCommand> {
         match chat_command {
             ChatCommand::InputChange(action) => self.input_message.perform(action),
             ChatCommand::InputSubmit => {
                 let text = self.input_message.text().trim().to_string();
+                self.input_message = Content::new();
                 if !text.is_empty() {
-                    self.chat.push(Message::from_user(self.user.clone(), text));
-                    self.input_message = Content::new();
+                    self.chat.add_user_message(text);
                 }
-                return Task::done(ChatCommand::GenerateNextMessage.into());
             }
-            ChatCommand::GenerateNextMessage => {
-                let chat_history = self.chat.get_chat_messages();
-                self.chat.push(Message::empty_from_char(self.char.clone()));
-                return self.get_response(settings, chat_history);
-            }
-            ChatCommand::StreamOk(text) => self.chat.append_last_message(text.as_str()),
             ChatCommand::MessageCommand(message_command) => match message_command {
-                MessageCommand::Next(idx) => {
-                    if self.chat.next(idx, self.char.clone()) {
-                        return self.get_response(settings, self.chat.get_chat_messages_until(idx));
-                    }
-                }
+                MessageCommand::Next(idx) => self.chat.next(idx),
                 MessageCommand::Previous(idx) => self.chat.previous(idx),
-                MessageCommand::ToggleEdit(idx) => {
-                    if self.chat.toggle_edit(idx) {
-                        return Task::done(ChatCommand::GenerateNextMessage.into());
-                    }
-                }
-                MessageCommand::AbortEdit(idx) => self.chat.abort_edit(idx),
-                MessageCommand::EditAction(idx, action) => self.chat.perform_action(idx, action),
-                MessageCommand::Delete(idx) => self.chat.delete(idx),
+                MessageCommand::ToggleEdit(_) => todo!(),
+                MessageCommand::AbortEdit(_) => todo!(),
+                MessageCommand::EditAction(_, _) => todo!(),
+                MessageCommand::Delete(_) => todo!(),
             },
         }
         Task::none()
-    }
-
-    fn get_response(&self, settings: &Settings, messages: Vec<ChatMessage>) -> Task<AppCommand> {
-        let llm = settings.llm(&self.char, &self.user);
-        Task::perform(async move { llm.chat_stream(&messages).await }, |res| res).and_then(|res| {
-            Task::run(res, |chunk| match chunk {
-                Ok(text) => ChatCommand::StreamOk(text).into(),
-                Err(e) => AppCommand::Error(e.to_string()),
-            })
-        })
     }
 }
