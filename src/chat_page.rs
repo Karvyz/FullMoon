@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     AppCommand,
     formater::Formater,
@@ -50,6 +52,7 @@ impl From<MessageCommand> for crate::AppCommand {
 pub struct ChatPage {
     chat: Chat,
     input_message: Content,
+    edits: HashMap<usize, Content>,
 }
 
 impl Default for ChatPage {
@@ -57,22 +60,17 @@ impl Default for ChatPage {
         ChatPage {
             input_message: Content::new(),
             chat: Chat::load(),
+            edits: HashMap::new(),
         }
     }
 }
 
 impl ChatPage {
-    pub fn new(char: Persona, user: Persona, settings: libmoon::settings::Settings) -> Self {
-        ChatPage {
-            input_message: Content::new(),
-            chat: Chat::with_personas(user, char, settings),
-        }
-    }
-
     pub fn try_load() -> Self {
         ChatPage {
             input_message: Content::new(),
             chat: Chat::load(),
+            edits: HashMap::new(),
         }
     }
 
@@ -154,17 +152,16 @@ impl ChatPage {
                             ]
                             .align_y(Alignment::Center)
                             .spacing(2),
-                            Element::from(Formater::rich_text(message.text.clone(), settings)),
-                            // if let Some(edit) = &current_node.message.editing {
-                            //     let idx2 = idx;
-                            //     Element::from(
-                            //         TextEditor::new(edit).size(settings.font_size()).on_action(
-                            //             move |a| MessageCommand::EditAction(idx2, a).into(),
-                            //         ),
-                            //     )
-                            // } else {
-                            //     Element::from(Formater::rich_text(&message.text, settings))
-                            // },
+                            if let Some(edit) = self.edits.get(&message.id()) {
+                                let idx2 = idx;
+                                Element::from(
+                                    TextEditor::new(edit).size(settings.font_size()).on_action(
+                                        move |a| MessageCommand::EditAction(idx2, a).into(),
+                                    ),
+                                )
+                            } else {
+                                Element::from(Formater::rich_text(message.text, settings))
+                            },
                         ]
                         .spacing(4)
                         .width(Length::FillPortion(6)),
@@ -185,6 +182,7 @@ impl ChatPage {
     }
 
     pub fn update(&mut self, chat_command: ChatCommand, settings: &Settings) -> Task<AppCommand> {
+        let messages = self.chat.get_history();
         match chat_command {
             ChatCommand::InputChange(action) => self.input_message.perform(action),
             ChatCommand::InputSubmit => {
@@ -197,9 +195,27 @@ impl ChatPage {
             ChatCommand::MessageCommand(message_command) => match message_command {
                 MessageCommand::Next(idx) => self.chat.next(idx),
                 MessageCommand::Previous(idx) => self.chat.previous(idx),
-                MessageCommand::ToggleEdit(_) => todo!(),
-                MessageCommand::AbortEdit(_) => todo!(),
-                MessageCommand::EditAction(_, _) => todo!(),
+                MessageCommand::ToggleEdit(idx) => {
+                    let id = messages[idx].id();
+                    match self.edits.remove(&id) {
+                        Some(content) => self.chat.add_edit(id, content.text()),
+                        None => {
+                            let _ = self
+                                .edits
+                                .insert(idx, Content::with_text(&messages[idx].text));
+                        }
+                    }
+                }
+                MessageCommand::AbortEdit(idx) => {
+                    let id = messages[idx].id();
+                    let _ = self.edits.remove(&id);
+                }
+                MessageCommand::EditAction(idx, action) => {
+                    let id = messages[idx].id();
+                    if let Some(content) = self.edits.get_mut(&id) {
+                        content.perform(action);
+                    }
+                }
                 MessageCommand::Delete(_) => todo!(),
             },
         }
