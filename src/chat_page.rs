@@ -4,7 +4,7 @@ use crate::{
     AppCommand,
     formater::Formater,
     settings::Settings,
-    utils::widgets::{bold_text, button, text},
+    utils::widgets::{bold_text, button, default_image, text},
 };
 use chrono::Local;
 use iced::{
@@ -13,12 +13,14 @@ use iced::{
     Task, Theme,
     font::Weight,
     widget::{
-        TextEditor, column, container, keyed, rich_text, row, scrollable, span,
+        Image, TextEditor, column, container, image,
+        image::Handle,
+        keyed, rich_text, row, scrollable, span,
         text_editor::{Action, Content},
     },
 };
 use iced_modern_theme::colors::colors;
-use libmoon::{chat::Chat, persona::Persona};
+use libmoon::{chat::Chat, message::Message, persona::Persona};
 
 #[derive(Debug, Clone)]
 pub enum ChatCommand {
@@ -53,13 +55,16 @@ pub struct ChatPage {
     chat: Chat,
     input_message: Content,
     edits: HashMap<usize, Content>,
+    handles: Vec<Option<Handle>>,
 }
 
 impl Default for ChatPage {
     fn default() -> Self {
+        let chat = Chat::load();
         ChatPage {
             input_message: Content::new(),
-            chat: Chat::load(),
+            handles: Self::to_handles(chat.raw_images()),
+            chat,
             edits: HashMap::new(),
         }
     }
@@ -67,9 +72,11 @@ impl Default for ChatPage {
 
 impl ChatPage {
     pub fn try_load() -> Self {
+        let chat = Chat::load();
         ChatPage {
             input_message: Content::new(),
-            chat: Chat::load(),
+            handles: Self::to_handles(chat.raw_images()),
+            chat,
             edits: HashMap::new(),
         }
     }
@@ -78,6 +85,7 @@ impl ChatPage {
         let user = self.chat.user();
         let settings = self.chat.settings().clone();
         self.chat = Chat::with_personas(user, char, settings);
+        self.edits = HashMap::new();
     }
 
     pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
@@ -121,8 +129,7 @@ impl ChatPage {
                 idx,
                 container(
                     row![
-                        // image(current_node.message.get_avatar_uri())
-                        // current_node.message.owner.image().width(Fill),
+                        self.try_image(&message).width(Fill),
                         column![
                             row![
                                 rich_text![
@@ -175,6 +182,13 @@ impl ChatPage {
         keyed_column
     }
 
+    fn try_image(&self, message: &Message) -> Image {
+        match &self.handles[usize::from(message.owner)] {
+            Some(handle) => image(handle),
+            None => default_image(&message.owner),
+        }
+    }
+
     fn message_style(theme: &Theme) -> iced::widget::container::Style {
         container::rounded_box(theme)
             .background(colors::fill::SECONDARY_DARK)
@@ -220,5 +234,15 @@ impl ChatPage {
             },
         }
         Task::none()
+    }
+
+    fn to_handles(raw_images: Vec<Option<(u32, u32, Vec<u8>)>>) -> Vec<Option<Handle>> {
+        let mut handles = vec![];
+        for raw in raw_images {
+            handles.push(
+                raw.map(|(width, height, content)| Handle::from_rgba(width, height, content)),
+            );
+        }
+        handles
     }
 }

@@ -1,6 +1,6 @@
 use iced::{
     Border, Element,
-    Length::Fill,
+    Length::{Fill, FillPortion},
     Theme,
     widget::{column, container, keyed, row, scrollable},
 };
@@ -10,7 +10,7 @@ use libmoon::persona::{Persona, loader};
 use crate::{
     AppCommand,
     settings::Settings,
-    utils::widgets::{bold_text, button},
+    utils::widgets::{bold_text, button, persona_image},
 };
 
 pub struct CharSelectorPage {
@@ -45,13 +45,13 @@ impl CharSelectorPage {
                 idx,
                 container(
                     row![
-                        // char.image().height(200),
+                        persona_image(char).width(Fill),
                         column![
                             bold_text(char.name(), settings),
                             button("Edit", settings),
                             button("Select", settings).on_press(AppCommand::SelectedChar(idx))
                         ]
-                        .width(Fill)
+                        .width(FillPortion(4))
                         .spacing(10)
                     ]
                     .width(Fill)

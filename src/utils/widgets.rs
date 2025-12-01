@@ -1,4 +1,9 @@
-use iced::{Element, Font, font::Weight, widget::Button};
+use iced::{
+    Element, Font,
+    font::Weight,
+    widget::{Button, Image, image, image::Handle},
+};
+use libmoon::{message::OwnerType, persona::Persona};
 
 use crate::{AppCommand, settings::Settings};
 
@@ -26,4 +31,18 @@ pub fn bold_text<'a>(
 
 pub fn button<'a>(content: &'a str, settings: &'a Settings) -> Button<'a, AppCommand> {
     iced::widget::button(text(content, settings))
+}
+
+pub fn default_image(owner: &OwnerType) -> Image {
+    match owner {
+        libmoon::message::OwnerType::User => image("assets/user.png"),
+        libmoon::message::OwnerType::Char(_) => image("assets/char.png"),
+    }
+}
+
+pub fn persona_image(persona: &Persona) -> Image {
+    match persona.raw_image() {
+        Some((width, height, content)) => image(Handle::from_rgba(width, height, content)),
+        None => image("assets/char.png"),
+    }
 }
