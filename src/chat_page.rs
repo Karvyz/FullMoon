@@ -193,30 +193,30 @@ impl ChatPage {
                 }
             }
             ChatCommand::MessageCommand(message_command) => match message_command {
-                MessageCommand::Next(idx) => self.chat.next(idx),
-                MessageCommand::Previous(idx) => self.chat.previous(idx),
-                MessageCommand::ToggleEdit(idx) => {
-                    let id = messages[idx].id();
+                MessageCommand::Next(depth) => self.chat.next(depth),
+                MessageCommand::Previous(depth) => self.chat.previous(depth),
+                MessageCommand::ToggleEdit(depth) => {
+                    let id = messages[depth].id();
                     match self.edits.remove(&id) {
-                        Some(content) => self.chat.add_edit(id, content.text()),
+                        Some(content) => self.chat.add_edit(depth, content.text()),
                         None => {
                             let _ = self
                                 .edits
-                                .insert(idx, Content::with_text(&messages[idx].text));
+                                .insert(id, Content::with_text(&messages[depth].text));
                         }
                     }
                 }
-                MessageCommand::AbortEdit(idx) => {
-                    let id = messages[idx].id();
+                MessageCommand::AbortEdit(depth) => {
+                    let id = messages[depth].id();
                     let _ = self.edits.remove(&id);
                 }
-                MessageCommand::EditAction(idx, action) => {
-                    let id = messages[idx].id();
+                MessageCommand::EditAction(depth, action) => {
+                    let id = messages[depth].id();
                     if let Some(content) = self.edits.get_mut(&id) {
                         content.perform(action);
                     }
                 }
-                MessageCommand::Delete(_) => todo!(),
+                MessageCommand::Delete(depth) => self.chat.delete(depth),
             },
         }
         Task::none()

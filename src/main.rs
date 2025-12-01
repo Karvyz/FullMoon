@@ -27,6 +27,7 @@ pub fn main() -> iced::Result {
     env_logger::Builder::new()
         .filter_level(log::LevelFilter::Off) // Default: everything off
         .filter_module("fullmoon", log::LevelFilter::Trace)
+        .filter_module("libmoon", log::LevelFilter::Trace)
         .filter_module("llm", log::LevelFilter::Trace)
         .init();
 
