@@ -1,19 +1,16 @@
 use iced::{
     Border, Element,
-    Length::Fill,
+    Length::{Fill, FillPortion},
     Theme,
     widget::{column, container, keyed, row, scrollable},
 };
 use iced_modern_theme::colors::colors;
+use libmoon::persona::{Persona, loader};
 
 use crate::{
     AppCommand,
-    persona::{
-        Persona,
-        loader::{PersonaLoader, Subdir},
-    },
-    settings::Settings,
-    utils::widgets::{bold_text, button},
+    settings_page::SettingsPage,
+    utils::widgets::{bold_text, button, persona_image},
 };
 
 pub struct CharSelectorPage {
@@ -23,7 +20,7 @@ pub struct CharSelectorPage {
 impl CharSelectorPage {
     pub fn new() -> Self {
         let mut csp = Self {
-            chars: PersonaLoader::load_from_cache(Subdir::Chars),
+            chars: loader::load_chars(),
         };
         csp.reorder();
         csp
@@ -41,20 +38,20 @@ impl CharSelectorPage {
         self.chars.reverse();
     }
 
-    pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
+    pub fn view<'a>(&'a self, settings: &'a SettingsPage) -> Element<'a, AppCommand> {
         let mut keyed_column = keyed::Column::new().padding(10).spacing(10);
         for (idx, char) in self.chars.iter().enumerate() {
             keyed_column = keyed_column.push(
                 idx,
                 container(
                     row![
-                        char.image().height(200),
+                        persona_image(char).width(Fill),
                         column![
                             bold_text(char.name(), settings),
                             button("Edit", settings),
                             button("Select", settings).on_press(AppCommand::SelectedChar(idx))
                         ]
-                        .width(Fill)
+                        .width(FillPortion(4))
                         .spacing(10)
                     ]
                     .width(Fill)
@@ -65,7 +62,6 @@ impl CharSelectorPage {
             )
         }
         scrollable(keyed_column)
-            .anchor_bottom()
             .height(Fill)
             .width(Fill)
             .spacing(10)
