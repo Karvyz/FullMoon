@@ -1526,6 +1526,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "dirs 6.0.0",
  "env_logger",
  "futures",
  "iced",
@@ -1534,6 +1535,8 @@ dependencies = [
  "llm",
  "log",
  "regex",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 
@@ -2611,6 +2614,7 @@ checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 [[package]]
 name = "libmoon"
 version = "0.1.0"
+source = "git+https://github.com/Karvyz/libmoon#895e2591919bf0b2eae74a1bc4f06bc2ac689608"
 dependencies = [
  "anyhow",
  "dirs 6.0.0",

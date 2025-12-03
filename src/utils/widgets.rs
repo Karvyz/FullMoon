@@ -5,11 +5,11 @@ use iced::{
 };
 use libmoon::{message::OwnerType, persona::Persona};
 
-use crate::{AppCommand, settings::Settings};
+use crate::{AppCommand, settings_page::SettingsPage};
 
 pub fn text<'a>(
     content: impl iced::widget::text::IntoFragment<'a>,
-    settings: &'a Settings,
+    settings: &'a SettingsPage,
 ) -> Element<'a, AppCommand> {
     iced::widget::text(content)
         .size(settings.font_size())
@@ -18,7 +18,7 @@ pub fn text<'a>(
 
 pub fn bold_text<'a>(
     content: impl iced::widget::text::IntoFragment<'a>,
-    settings: &'a Settings,
+    settings: &'a SettingsPage,
 ) -> Element<'a, AppCommand> {
     iced::widget::text(content)
         .size(settings.font_size())
@@ -29,7 +29,7 @@ pub fn bold_text<'a>(
         .into()
 }
 
-pub fn button<'a>(content: &'a str, settings: &'a Settings) -> Button<'a, AppCommand> {
+pub fn button<'a>(content: &'a str, settings: &'a SettingsPage) -> Button<'a, AppCommand> {
     iced::widget::button(text(content, settings))
 }
 

@@ -11,6 +11,7 @@ use log::{error, trace};
 
 use crate::{
     AppCommand,
+    app_settings::AppSettings,
     utils::widgets::{bold_text, text},
 };
 
@@ -31,28 +32,28 @@ impl From<SettingsChange> for crate::AppCommand {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct Settings {
-    font_size: f32,
-    base: libmoon::settings::Settings,
+pub struct SettingsPage {
+    app: AppSettings,
+    chat: libmoon::settings::Settings,
 }
 
-impl Deref for Settings {
+impl Deref for SettingsPage {
     type Target = libmoon::settings::Settings;
 
     fn deref(&self) -> &Self::Target {
-        &self.base
+        &self.chat
     }
 }
 
-impl Settings {
+impl SettingsPage {
     pub fn font_size(&self) -> f32 {
-        self.font_size
+        self.app.font_size
     }
 
-    pub fn load() -> Self {
-        Settings {
-            font_size: 20.,
-            base: libmoon::settings::Settings::load(),
+    pub fn load(chat_settings: libmoon::settings::Settings) -> Self {
+        SettingsPage {
+            app: AppSettings::load(),
+            chat: chat_settings,
         }
     }
 
@@ -65,7 +66,7 @@ impl Settings {
                         column![
                             text("API Key:", self),
                             text_input("sk-************************************", &self.api_key)
-                                .size(self.font_size)
+                                .size(self.app.font_size)
                                 .on_input(|t| SettingsChange::ApiKey(t).into())
                                 .on_paste(|t| SettingsChange::ApiKey(t).into())
                                 .secure(true)
@@ -75,7 +76,7 @@ impl Settings {
                         column![
                             text("Model:", self),
                             text_input("google/gemma-3-27b-it", &self.model)
-                                .size(self.font_size)
+                                .size(self.app.font_size)
                                 .on_input(|t| SettingsChange::Model(t).into())
                                 .on_paste(|t| SettingsChange::Model(t).into())
                                 .width(Fill)
@@ -99,7 +100,7 @@ impl Settings {
                         ]
                         .spacing(5),
                         checkbox("Reasoning", self.reasoning)
-                            .size(self.font_size)
+                            .size(self.app.font_size)
                             .on_toggle(|r| SettingsChange::Reasoning(r).into()),
                     ]
                     .align_x(Alignment::Center)
@@ -112,8 +113,8 @@ impl Settings {
                     column![
                         bold_text("App settings", self),
                         column![
-                            text(format! {"Font size: {}", self.font_size}, self),
-                            slider(4.0..=100.0, self.font_size, |fs| {
+                            text(format! {"Font size: {}", self.app.font_size}, self),
+                            slider(4.0..=100.0, self.app.font_size, |fs| {
                                 SettingsChange::FontSize(fs).into()
                             })
                             .width(Fill),
@@ -138,27 +139,28 @@ impl Settings {
         match settings_command {
             SettingsChange::ApiKey(key) => {
                 trace!("Update key");
-                self.base.api_key = key
+                self.chat.api_key = key
             }
             SettingsChange::Model(model) => {
                 trace!("Update model: {model}");
-                self.base.model = model
+                self.chat.model = model
             }
             SettingsChange::Temperature(temperature) => {
                 trace!("Update temperature: {temperature}");
-                self.base.temperature = temperature
+                self.chat.temperature = temperature
             }
             SettingsChange::MaxTokens(max_tokens) => {
                 trace!("Update max_tokens: {max_tokens}");
-                self.base.max_tokens = max_tokens
+                self.chat.max_tokens = max_tokens
             }
             SettingsChange::Reasoning(reasoning) => {
                 trace!("Update reasoning: {reasoning}");
-                self.base.reasoning = reasoning
+                self.chat.reasoning = reasoning
             }
             SettingsChange::FontSize(font_size) => {
                 trace!("Update font size: {font_size}");
-                self.font_size = font_size
+                self.app.font_size = font_size;
+                self.app.save();
             }
         }
 

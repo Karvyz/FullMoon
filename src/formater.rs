@@ -6,7 +6,7 @@ use iced::{
 use iced_modern_theme::colors::colors;
 use regex::Regex;
 
-use crate::{AppCommand, settings::Settings};
+use crate::{AppCommand, settings_page::SettingsPage};
 
 pub struct Formater {}
 
@@ -27,7 +27,7 @@ impl Formater {
         few_linebreaks.trim().to_string()
     }
 
-    pub fn rich_text(text: String, settings: &Settings) -> Element<'_, AppCommand> {
+    pub fn rich_text(text: String, settings: &SettingsPage) -> Element<'_, AppCommand> {
         let mut spans = vec![];
         let mut current_type = StringType::Normal;
         let mut current_string = String::new();

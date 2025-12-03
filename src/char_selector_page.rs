@@ -9,7 +9,7 @@ use libmoon::persona::{Persona, loader};
 
 use crate::{
     AppCommand,
-    settings::Settings,
+    settings_page::SettingsPage,
     utils::widgets::{bold_text, button, persona_image},
 };
 
@@ -38,7 +38,7 @@ impl CharSelectorPage {
         self.chars.reverse();
     }
 
-    pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
+    pub fn view<'a>(&'a self, settings: &'a SettingsPage) -> Element<'a, AppCommand> {
         let mut keyed_column = keyed::Column::new().padding(10).spacing(10);
         for (idx, char) in self.chars.iter().enumerate() {
             keyed_column = keyed_column.push(
@@ -62,7 +62,6 @@ impl CharSelectorPage {
             )
         }
         scrollable(keyed_column)
-            .anchor_bottom()
             .height(Fill)
             .width(Fill)
             .spacing(10)

@@ -3,7 +3,7 @@ use std::time::Duration;
 use iced::{
     Border, Element,
     Length::{self, Fill},
-    Task, Theme,
+    Subscription, Task, Theme, time,
     widget::{Row, Stack, column, container, row},
 };
 use iced_modern_theme::Modern;
@@ -13,14 +13,15 @@ use tokio::time::sleep;
 use crate::{
     char_selector_page::CharSelectorPage,
     chat_page::{ChatCommand, ChatPage},
-    settings::{Settings, SettingsChange},
+    settings_page::{SettingsChange, SettingsPage},
     utils::widgets::{button, text},
 };
 
+mod app_settings;
 mod char_selector_page;
 mod chat_page;
 mod formater;
-mod settings;
+mod settings_page;
 mod utils;
 
 pub fn main() -> iced::Result {
@@ -33,13 +34,14 @@ pub fn main() -> iced::Result {
 
     iced::application("FullMoon", App::update, App::view)
         .theme(App::theme)
+        .subscription(App::subscription)
         .run_with(|| (App::new(), iced::Task::none()))
 }
 
 struct App {
     chat_page: ChatPage,
     char_selector_page: Option<CharSelectorPage>,
-    settings: Settings,
+    settings_page: SettingsPage,
     show_settings: bool,
     error: Option<String>,
 }
@@ -56,14 +58,18 @@ enum AppCommand {
 
     Error(String),
     DismissError,
+
+    Update,
 }
 
 impl App {
     fn new() -> Self {
+        let chat_page = ChatPage::try_load();
+        let chat_settings = chat_page.chat.settings().clone();
         App {
-            chat_page: ChatPage::try_load(),
+            chat_page,
             char_selector_page: None,
-            settings: Settings::load(),
+            settings_page: SettingsPage::load(chat_settings),
             show_settings: false,
             error: None,
         }
@@ -72,7 +78,7 @@ impl App {
     fn update(&mut self, message: AppCommand) -> Task<AppCommand> {
         match message {
             AppCommand::ChatCommand(chat_command) => {
-                return self.chat_page.update(chat_command, &self.settings);
+                return self.chat_page.update(chat_command);
             }
             AppCommand::ToggleChars => {
                 self.char_selector_page = match self.char_selector_page {
@@ -93,7 +99,6 @@ impl App {
                     self.chat_page.set_char(char)
                 }
             }
-
             AppCommand::ToggleSettings => {
                 self.show_settings = match self.show_settings {
                     false => {
@@ -106,12 +111,15 @@ impl App {
                     }
                 };
             }
-            AppCommand::SettignsCommand(settings_command) => self.settings.update(settings_command),
+            AppCommand::SettignsCommand(settings_command) => {
+                self.settings_page.update(settings_command)
+            }
             AppCommand::Error(e) => {
                 self.error = Some(e);
                 return Task::perform(sleep(Duration::from_secs(3)), |_| AppCommand::DismissError);
             }
             AppCommand::DismissError => self.error = None,
+            AppCommand::Update => (),
         }
         Task::none()
     }
@@ -119,21 +127,21 @@ impl App {
     fn view(&self) -> Element<'_, AppCommand> {
         let mut pages = Row::new().spacing(20);
         if let Some(char_selector_page) = &self.char_selector_page {
-            pages = pages.push(char_selector_page.view(&self.settings))
+            pages = pages.push(char_selector_page.view(&self.settings_page))
         }
         if self.show_settings {
-            pages = pages.push(self.settings.view())
+            pages = pages.push(self.settings_page.view())
         }
-        pages = pages.push(self.chat_page.view(&self.settings));
+        pages = pages.push(self.chat_page.view(&self.settings_page));
 
         let mut stack = Stack::new();
         stack = stack.push(column![
             row![
-                button("User", &self.settings).width(Fill),
-                button("Characters", &self.settings)
+                button("User", &self.settings_page).width(Fill),
+                button("Characters", &self.settings_page)
                     .on_press(AppCommand::ToggleChars)
                     .width(Fill),
-                button("Settings", &self.settings)
+                button("Settings", &self.settings_page)
                     .on_press(AppCommand::ToggleSettings)
                     .width(Fill)
             ]
@@ -144,7 +152,7 @@ impl App {
         if let Some(e) = &self.error {
             stack = stack.push(
                 container(
-                    container(text(e, &self.settings))
+                    container(text(e, &self.settings_page))
                         .padding(20)
                         .style(Self::error_style),
                 )
@@ -169,5 +177,9 @@ impl App {
                     .width(2)
                     .color(palette.danger.strong.color),
             )
+    }
+
+    fn subscription(&self) -> Subscription<AppCommand> {
+        time::every(Duration::from_millis(16)).map(|_| AppCommand::Update)
     }
 }

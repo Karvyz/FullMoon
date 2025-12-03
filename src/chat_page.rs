@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     AppCommand,
     formater::Formater,
-    settings::Settings,
+    settings_page::SettingsPage,
     utils::widgets::{bold_text, button, default_image, text},
 };
 use chrono::Local;
@@ -20,13 +20,14 @@ use iced::{
     },
 };
 use iced_modern_theme::colors::colors;
-use libmoon::{chat::Chat, message::Message, persona::Persona};
+use libmoon::{chat::Chat, message::Message, persona::Persona, settings::Settings};
 
 #[derive(Debug, Clone)]
 pub enum ChatCommand {
     InputChange(Action),
     InputSubmit,
     MessageCommand(MessageCommand),
+    UpdateSettings(Settings),
 }
 
 impl From<ChatCommand> for crate::AppCommand {
@@ -52,7 +53,7 @@ impl From<MessageCommand> for crate::AppCommand {
 }
 
 pub struct ChatPage {
-    chat: Chat,
+    pub chat: Chat,
     input_message: Content,
     edits: HashMap<usize, Content>,
     handles: Vec<Option<Handle>>,
@@ -86,9 +87,10 @@ impl ChatPage {
         let settings = self.chat.settings().clone();
         self.chat = Chat::with_personas(user, char, settings);
         self.edits = HashMap::new();
+        self.handles = Self::to_handles(self.chat.raw_images());
     }
 
-    pub fn view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
+    pub fn view<'a>(&'a self, settings: &'a SettingsPage) -> Element<'a, AppCommand> {
         iced::widget::column![
             bold_text(self.chat.title(), settings),
             self.chat_view(settings),
@@ -107,7 +109,7 @@ impl ChatPage {
         .into()
     }
 
-    pub fn chat_view<'a>(&'a self, settings: &'a Settings) -> Element<'a, AppCommand> {
+    pub fn chat_view<'a>(&'a self, settings: &'a SettingsPage) -> Element<'a, AppCommand> {
         scrollable(self.create_column_view(settings))
             .anchor_bottom()
             .height(Fill)
@@ -118,7 +120,7 @@ impl ChatPage {
 
     fn create_column_view<'a>(
         &'a self,
-        settings: &'a Settings,
+        settings: &'a SettingsPage,
     ) -> keyed::Column<'a, usize, AppCommand> {
         let mut keyed_column = keyed::Column::new().spacing(10);
         let messages = self.chat.get_history();
@@ -195,16 +197,14 @@ impl ChatPage {
             .border(Border::default().rounded(12))
     }
 
-    pub fn update(&mut self, chat_command: ChatCommand, settings: &Settings) -> Task<AppCommand> {
+    pub fn update(&mut self, chat_command: ChatCommand) -> Task<AppCommand> {
         let messages = self.chat.get_history();
         match chat_command {
+            ChatCommand::UpdateSettings(settings) => self.chat.set_settings(settings),
             ChatCommand::InputChange(action) => self.input_message.perform(action),
             ChatCommand::InputSubmit => {
-                let text = self.input_message.text().trim().to_string();
+                self.chat.add_user_message(self.input_message.text());
                 self.input_message = Content::new();
-                if !text.is_empty() {
-                    self.chat.add_user_message(text);
-                }
             }
             ChatCommand::MessageCommand(message_command) => match message_command {
                 MessageCommand::Next(depth) => self.chat.next(depth),
